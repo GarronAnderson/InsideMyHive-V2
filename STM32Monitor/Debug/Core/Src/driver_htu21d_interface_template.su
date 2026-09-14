@@ -1,0 +1,9 @@
+../Core/Src/driver_htu21d_interface_template.c:49:9:htu21d_interface_iic_init	8	static
+../Core/Src/driver_htu21d_interface_template.c:61:9:htu21d_interface_iic_deinit	8	static
+../Core/Src/driver_htu21d_interface_template.c:76:9:htu21d_interface_iic_write_cmd	32	static
+../Core/Src/driver_htu21d_interface_template.c:96:9:htu21d_interface_iic_read_cmd	32	static
+../Core/Src/driver_htu21d_interface_template.c:117:9:htu21d_interface_iic_write	48	static
+../Core/Src/driver_htu21d_interface_template.c:153:9:htu21d_interface_iic_read	40	static
+../Core/Src/driver_htu21d_interface_template.c:180:9:htu21d_interface_iic_read_with_scl	24	static
+../Core/Src/driver_htu21d_interface_template.c:190:6:htu21d_interface_delay_ms	16	static
+../Core/Src/driver_htu21d_interface_template.c:200:6:htu21d_interface_debug_print	8	static
