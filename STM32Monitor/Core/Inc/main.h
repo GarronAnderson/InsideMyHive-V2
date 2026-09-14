@@ -68,6 +68,12 @@ void Error_Handler(void);
 #define OSC_IN_GPIO_Port GPIOF
 #define OSC_OUT_Pin GPIO_PIN_1
 #define OSC_OUT_GPIO_Port GPIOF
+#define TFT_CS_Pin GPIO_PIN_0
+#define TFT_CS_GPIO_Port GPIOB
+#define TFT_DC_Pin GPIO_PIN_1
+#define TFT_DC_GPIO_Port GPIOB
+#define TFT_RST_Pin GPIO_PIN_2
+#define TFT_RST_GPIO_Port GPIOB
 #define SWDIO_Pin GPIO_PIN_13
 #define SWDIO_GPIO_Port GPIOA
 #define SWCLK_Pin GPIO_PIN_14
