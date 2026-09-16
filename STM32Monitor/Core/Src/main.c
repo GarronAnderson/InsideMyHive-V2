@@ -26,8 +26,9 @@
 #include "driver_htu21d_interface.h"
 
 #include "st7735.h"
-
 #include "gfx.h"
+
+#include "nau7802.h"
 
 /* USER CODE END Includes */
 
@@ -140,7 +141,7 @@ int main(void)
 
   ST7735_Fill(ST7735_BLACK);
 
-  GFX_SetTextColor(ST7735_WHITE);
+  /*GFX_SetTextColor(ST7735_WHITE);
   GFX_SetTextSize(1);
 
   GFX_SetCursor(5, 5);
@@ -157,7 +158,17 @@ int main(void)
 
   HAL_Delay(2000);
 
-  ST7735_Fill(ST7735_BLACK);
+  ST7735_Fill(ST7735_BLACK);*/
+
+  res = NAU7802_Init();
+
+  if (res != 0)
+  {
+      Error_Handler();
+  }
+
+  int32_t adc_value;
+
   /* USER CODE END 2 */
 
   /* Initialize leds */
@@ -219,11 +230,26 @@ int main(void)
 
 	        GFX_SetCursor(2, 2);
 	        GFX_SetTextColor(ST7735_WHITE);
-	        GFX_SetTextSize(1);
+	        GFX_SetTextSize(2);
 	        GFX_Print(temp_text);
 	    }
 
-	      HAL_Delay(2000);
+	  if (NAU7802_ReadADC(&adc_value) == HAL_OK)
+	  {
+	      char adc_text[20];
+
+	      snprintf(adc_text, sizeof(adc_text),
+	               "ADC: %ld", (long)adc_value);
+
+	      GFX_FillRect(2, 20, 80, 10, ST7735_BLACK);
+
+	      GFX_SetCursor(2, 20);
+	      GFX_SetTextColor(ST7735_WHITE);
+	      GFX_SetTextSize(1);
+	      GFX_Print(adc_text);
+	  }
+
+	      HAL_Delay(300);
   }
   /* USER CODE END 3 */
 }
@@ -374,7 +400,23 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOC, RFM_CS_Pin|RFM_RST_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, TFT_CS_Pin|TFT_DC_Pin|TFT_RST_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pins : RFM_CS_Pin RFM_RST_Pin */
+  GPIO_InitStruct.Pin = RFM_CS_Pin|RFM_RST_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : RFM_IRQ_Pin */
+  GPIO_InitStruct.Pin = RFM_IRQ_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(RFM_IRQ_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : TFT_CS_Pin TFT_DC_Pin TFT_RST_Pin */
   GPIO_InitStruct.Pin = TFT_CS_Pin|TFT_DC_Pin|TFT_RST_Pin;

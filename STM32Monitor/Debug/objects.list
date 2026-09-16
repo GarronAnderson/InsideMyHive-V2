@@ -3,6 +3,7 @@
 "./Core/Src/font5x7.o"
 "./Core/Src/gfx.o"
 "./Core/Src/main.o"
+"./Core/Src/nau7802.o"
 "./Core/Src/st7735.o"
 "./Core/Src/stm32u0xx_hal_msp.o"
 "./Core/Src/stm32u0xx_it.o"
