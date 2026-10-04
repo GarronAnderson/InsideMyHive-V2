@@ -62,7 +62,7 @@ main-build: STM32Monitor.elf secondary-outputs
 
 # Tool invocations
 STM32Monitor.elf STM32Monitor.map: $(OBJS) $(USER_OBJS) C:\Users\mfdal\Desktop\Projects\Garron\01\ Bee\ Hive\ Monitor\V2\ Monitor\ STM32\STM32Monitor\STM32U083RCTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "STM32Monitor.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m0plus -T"C:\Users\mfdal\Desktop\Projects\Garron\01 Bee Hive Monitor\V2 Monitor STM32\STM32Monitor\STM32U083RCTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="STM32Monitor.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+	arm-none-eabi-gcc -o "STM32Monitor.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m0plus -T"C:\Users\mfdal\Desktop\Projects\Garron\01 Bee Hive Monitor\V2 Monitor STM32\STM32Monitor\STM32U083RCTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="STM32Monitor.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

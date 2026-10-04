@@ -74,16 +74,23 @@ void Error_Handler(void);
 #define RFM_RST_GPIO_Port GPIOC
 #define RFM_IRQ_Pin GPIO_PIN_2
 #define RFM_IRQ_GPIO_Port GPIOC
+#define FERAM_CS_Pin GPIO_PIN_4
+#define FERAM_CS_GPIO_Port GPIOC
 #define TFT_CS_Pin GPIO_PIN_0
 #define TFT_CS_GPIO_Port GPIOB
 #define TFT_DC_Pin GPIO_PIN_1
 #define TFT_DC_GPIO_Port GPIOB
 #define TFT_RST_Pin GPIO_PIN_2
 #define TFT_RST_GPIO_Port GPIOB
+#define DEBUG_REQUEST_Pin GPIO_PIN_10
+#define DEBUG_REQUEST_GPIO_Port GPIOA
+#define DEBUG_REQUEST_EXTI_IRQn EXTI4_15_IRQn
 #define SWDIO_Pin GPIO_PIN_13
 #define SWDIO_GPIO_Port GPIOA
 #define SWCLK_Pin GPIO_PIN_14
 #define SWCLK_GPIO_Port GPIOA
+#define TFT_PWR_Pin GPIO_PIN_4
+#define TFT_PWR_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 

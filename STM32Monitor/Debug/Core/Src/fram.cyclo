@@ -1,0 +1,9 @@
+../Core/Src/fram.c:24:13:FRAM_CS_Low	1
+../Core/Src/fram.c:31:13:FRAM_CS_High	1
+../Core/Src/fram.c:38:26:FRAM_SendAddress	1
+../Core/Src/fram.c:49:19:FRAM_Init	1
+../Core/Src/fram.c:59:19:FRAM_WriteEnable	1
+../Core/Src/fram.c:76:19:FRAM_Sleep	1
+../Core/Src/fram.c:93:19:FRAM_ReadStatus	2
+../Core/Src/fram.c:120:19:FRAM_Read	7
+../Core/Src/fram.c:159:19:FRAM_Write	8

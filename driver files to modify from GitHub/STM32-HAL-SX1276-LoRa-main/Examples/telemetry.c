@@ -1,0 +1,133 @@
+#include "telemetry.h"
+#include "Lora_App.h"
+#include "LoRa.h"
+#include "crc16.h"
+#include "flight_sensors.h"
+#include "kalman.h"
+#include "packets.h"
+#include "stm32f4xx_hal.h"
+#include <stdint.h>
+#include "pyro.h"
+#include "flight_state.h"
+#include "main.h"
+
+
+
+HAL_StatusTypeDef lora_tx_telemetry(FlightSensorData *sensordata) {
+    
+    static uint8_t seq = 0;
+    uint8_t buff[62] = {0};
+    HAL_StatusTypeDef result;
+    TelemetryPacket packet;
+
+    packet.header.sync_word = 0xAA;
+    packet.header.packet_type = 0x01;
+    packet.header.sequence_number = seq;
+
+    packet.sensordata = *sensordata;
+
+    packet.flight_State = sensordata->flight_state;
+
+    
+    // LoRa driver consumes first 4 bytes internally (SX1276 FIFO header)
+    // payload starts at buff + 4
+    telemetry_serializer(&packet, buff + 4);
+
+    lora_tx_done_flag = 0;
+
+    result = lora_TX(buff, 62, 200);
+
+    seq++;
+
+    return result;
+
+
+}
+
+
+HAL_StatusTypeDef lora_rx_command() {
+    HAL_StatusTypeDef result;
+
+    uint8_t buff[13] = {0};
+    uint8_t rxLength = 0;
+
+    result = lora_RX(buff, &rxLength, 13, 150);
+
+
+    if(result == HAL_TIMEOUT) {
+        return HAL_OK;
+    }
+
+    if(result == HAL_OK) {
+    
+        uint8_t cmd_id;
+        uint8_t channel;
+        if(command_deserializer(buff+4, &cmd_id, &channel)) {
+            switch (cmd_id) {
+                
+                case CMD_ARM:
+                     #ifdef DEBUG
+                        printf("CMD_ARM rx, before=%d\r\n", FSM_get_state());
+                    #endif
+                    FSM_arm();
+                    #ifdef DEBUG
+                        printf("after=%d\r\n", FSM_get_state());
+                    #endif
+                    break;
+                
+                case CMD_FIRE:
+                    
+                    if (FSM_get_state() != STATE_PAD) break;   // only fire on the pad, post-arm
+                            switch (channel) {
+                                case 1:
+                                    pyro_fire_drogue_ground();
+                                    FSM_disarm();
+                                    break;
+                                case 2: 
+                                    pyro_fire_main_ground();
+                                    FSM_disarm();   
+                                    break;
+                            }
+                    
+                    break;
+                  
+                case CMD_DISARM:
+                    FSM_disarm();
+                    /*disarm rocket*/
+                    break;
+
+            }
+            
+        }
+    }
+
+    return result;
+
+
+}
+
+HAL_StatusTypeDef lora_tx_continuity() {
+    
+    static uint8_t seq = 0;
+    uint8_t buff[12] = {0};
+    HAL_StatusTypeDef result;
+    ContinuityPacket packet;
+
+    packet.header.sync_word = 0xAA;
+    packet.header.packet_type = continuity_packet;
+    packet.header.sequence_number = seq;
+
+    packet.main = pyro_check_main();
+    packet.drogue = pyro_check_drogue();
+    
+    // LoRa driver consumes first 4 bytes internally (SX1276 FIFO header)
+    // payload starts at buff + 4
+    continuity_serializer(&packet, buff + 4);
+
+    result = lora_TX(buff, 12, 100);
+
+    seq++;
+
+    return result;
+
+}

@@ -22,6 +22,9 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
+#include "fram.h"
+#include "power.h"
+
 #include "driver_htu21d.h"
 #include "driver_htu21d_interface.h"
 
@@ -29,6 +32,11 @@
 #include "gfx.h"
 
 #include "nau7802.h"
+
+#include "rfm95.h"
+
+#include "fram_queue.h"
+#include "hive_packet.h"
 
 /* USER CODE END Includes */
 
@@ -51,7 +59,11 @@
 
 COM_InitTypeDef BspCOMInit;
 
+CRC_HandleTypeDef hcrc;
+
 I2C_HandleTypeDef hi2c1;
+
+RTC_HandleTypeDef hrtc;
 
 SPI_HandleTypeDef hspi1;
 
@@ -59,19 +71,28 @@ SPI_HandleTypeDef hspi1;
 
 htu21d_handle_t htu21d;
 
+HivePacket packet;
+
+volatile uint8_t debug_requested = 0;
+
+uint8_t tx_success = 0;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_I2C1_Init(void);
-static void MX_SPI1_Init(void);
+void MX_SPI1_Init(void);
+static void MX_RTC_Init(void);
+static void MX_CRC_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
 
 /* USER CODE END 0 */
 
@@ -106,68 +127,79 @@ int main(void)
   MX_GPIO_Init();
   MX_I2C1_Init();
   MX_SPI1_Init();
+  MX_RTC_Init();
+  MX_CRC_Init();
   /* USER CODE BEGIN 2 */
 
+  Set_RTC_Default_Time();
 
-  uint8_t res;
-  uint16_t temperature_raw;
-  uint16_t humidity_raw;
-  float temperature;
-  float humidity;
+  FRAM_Init();
+  FRAM_QueueInit();
 
-  DRIVER_HTU21D_LINK_INIT(&htu21d, htu21d_handle_t);
-  DRIVER_HTU21D_LINK_IIC_INIT(&htu21d, htu21d_interface_iic_init);
-  DRIVER_HTU21D_LINK_IIC_DEINIT(&htu21d, htu21d_interface_iic_deinit);
-  DRIVER_HTU21D_LINK_IIC_WRITE_CMD(&htu21d, htu21d_interface_iic_write_cmd);
-  DRIVER_HTU21D_LINK_IIC_READ_CMD(&htu21d, htu21d_interface_iic_read_cmd);
-  DRIVER_HTU21D_LINK_IIC_WRITE(&htu21d, htu21d_interface_iic_write);
-  DRIVER_HTU21D_LINK_IIC_READ(&htu21d, htu21d_interface_iic_read);
-  DRIVER_HTU21D_LINK_IIC_READ_WITH_SCL(&htu21d, htu21d_interface_iic_read_with_scl);
-  DRIVER_HTU21D_LINK_DELAY_MS(&htu21d, htu21d_interface_delay_ms);
-  DRIVER_HTU21D_LINK_DEBUG_PRINT(&htu21d, htu21d_interface_debug_print);
+  	uint8_t res;
+	uint16_t temperature_raw;
+	uint16_t humidity_raw;
+	float temperature;
+	float humidity;
 
-  res = htu21d_init(&htu21d);
+	DRIVER_HTU21D_LINK_INIT(&htu21d, htu21d_handle_t);
+	DRIVER_HTU21D_LINK_IIC_INIT(&htu21d, htu21d_interface_iic_init);
+	DRIVER_HTU21D_LINK_IIC_DEINIT(&htu21d, htu21d_interface_iic_deinit);
+	DRIVER_HTU21D_LINK_IIC_WRITE_CMD(&htu21d, htu21d_interface_iic_write_cmd);
+	DRIVER_HTU21D_LINK_IIC_READ_CMD(&htu21d, htu21d_interface_iic_read_cmd);
+	DRIVER_HTU21D_LINK_IIC_WRITE(&htu21d, htu21d_interface_iic_write);
+	DRIVER_HTU21D_LINK_IIC_READ(&htu21d, htu21d_interface_iic_read);
+	DRIVER_HTU21D_LINK_IIC_READ_WITH_SCL(&htu21d, htu21d_interface_iic_read_with_scl);
+	DRIVER_HTU21D_LINK_DELAY_MS(&htu21d, htu21d_interface_delay_ms);
+	DRIVER_HTU21D_LINK_DEBUG_PRINT(&htu21d, htu21d_interface_debug_print);
 
-  if (res != 0)
-  {
-      /* Sensor initialization failed */
-      Error_Handler();
-  }
-  
-  ST7735_Init();
-  ST7735_Fill(ST7735_BLACK);
+	res = htu21d_init(&htu21d);
 
-  GFX_Init();
+	if (res != 0)
+	{
+		/* Sensor initialization failed */
+		Error_Handler();
+	}
 
-  ST7735_Fill(ST7735_BLACK);
+	PowerOnDisplay();
+	ST7735_Init();
+	ST7735_Fill(ST7735_BLACK);
 
-  /*GFX_SetTextColor(ST7735_WHITE);
-  GFX_SetTextSize(1);
+	GFX_Init();
 
-  GFX_SetCursor(5, 5);
-  GFX_Print("Hello!");
+	res = NAU7802_Init();
 
-  GFX_SetCursor(5, 15);
-  GFX_Print("STM32U083");
+	if (res != 0)
+	{
+		Error_Handler();
+	}
 
-  GFX_SetTextColor(ST7735_GREEN);
-  GFX_SetTextSize(2);
+	int32_t weight;
 
-  GFX_SetCursor(10, 30);
-  GFX_Print("TADA!");
+	SX1276_HandleTypedef rfm95 = {
+		.hspi = &hspi1,
+		.nss_port = RFM_CS_GPIO_Port,
+		.nss_pin = RFM_CS_Pin,
+		.rst_port = RFM_RST_GPIO_Port,
+		.rst_pin = RFM_RST_Pin
+	};
 
-  HAL_Delay(2000);
+	LORA_CONFIG_TYPEDEF lora_config = {
+		.frequency = 915000000UL,
+		.spreading_Factor = 7,
+		.bandwidth = 125000,
+		.coding_Rate = 5,
+		.tx_Power = 17,
+		.use_Pa_Boost = 1,
+		.preamble_Length = 8,
+		.sync_Word = 0x12,
+		.enable_CRC = 1,
+		.implicit_header = 0
+	};
 
-  ST7735_Fill(ST7735_BLACK);*/
+	lora_init(&rfm95, &lora_config);
 
-  res = NAU7802_Init();
-
-  if (res != 0)
-  {
-      Error_Handler();
-  }
-
-  int32_t adc_value;
+	uint8_t retries = 0;
 
   /* USER CODE END 2 */
 
@@ -197,59 +229,124 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
+  // Just woke up
+  PowerUp();
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
 
-	  res = htu21d_read_temperature_humidity(
-	      &htu21d,
-	      &temperature_raw,
-	      &temperature,
-	      &humidity_raw,
-	      &humidity
-	  );
+  if(debug_requested){
+	  PowerOnDisplay();
 
-	  if (res == 0)
-	    {
-	        char temp_text[16];
+	  GFX_SetCursor(2, 2);
+	  GFX_SetTextColor(ST7735_GREEN);
+	  GFX_Print("DEBUG");
+	  GFX_SetTextColor(ST7735_WHITE);
 
-	        int temp_int = (int)temperature;
-	        int temp_dec = (int)((temperature - temp_int) * 10.0f);
+	  while(debug_requested){
+		  res = htu21d_read_temperature_humidity(
+			  &htu21d,
+			  &temperature_raw,
+			  &temperature,
+			  &humidity_raw,
+			  &humidity
+		  );
 
-	        temp_text[0] = 'T';
-	        temp_text[1] = 'e';
-	        temp_text[2] = 'm';
-	        temp_text[3] = 'p';
-	        temp_text[4] = ':';
-	        temp_text[5] = ' ';
+		  NAU7802_ReadADC(&weight);
 
-	        temp_text[6] = '0' + (temp_int / 10) % 10;
-	        temp_text[7] = '0' + temp_int % 10;
-	        temp_text[8] = '.';
-	        temp_text[9] = '0' + temp_dec;
-	        temp_text[10] = ' ';
-	        temp_text[11] = 'C';
-	        temp_text[12] = '\0';
+		  char buffer[32];
+		  temperature = (temperature * 9 / 5) + 32;
+		  sprintf(buffer, "Hive Temp: %.2f F", temperature);
+		  GFX_SetCursor(2, 12);
+		  GFX_Print(buffer);
 
-	        GFX_SetCursor(2, 2);
-	        GFX_SetTextColor(ST7735_WHITE);
-	        GFX_SetTextSize(2);
-	        GFX_Print(temp_text);
-	    }
+		  sprintf(buffer, "Hive Hum.: %.2f %%", humidity);
+		  GFX_SetCursor(2, 24);
+		  GFX_Print(buffer);
 
-	  if (NAU7802_ReadADC(&adc_value) == HAL_OK)
-	  {
-	      char adc_text[20];
+		  sprintf(buffer, "Weight: %ld", weight);
+		  GFX_SetCursor(2, 36);
+		  GFX_Print(buffer);
 
-	      snprintf(adc_text, sizeof(adc_text),
-	               "ADC: %ld", (long)adc_value);
-
-	      GFX_FillRect(2, 20, 80, 10, ST7735_BLACK);
-
-	      GFX_SetCursor(2, 20);
-	      GFX_SetTextColor(ST7735_WHITE);
-	      GFX_SetTextSize(1);
-	      GFX_Print(adc_text);
+		  HAL_Delay(200);
 	  }
+  }
 
-	      HAL_Delay(300);
+  // Powered On
+
+  res = htu21d_read_temperature_humidity(
+	  &htu21d,
+	  &temperature_raw,
+	  &temperature,
+	  &humidity_raw,
+	  &humidity
+  );
+
+  NAU7802_ReadADC(&weight);
+
+  packet.version = 1;
+  packet.node_id = 1;
+  packet.sequence++;
+
+  packet.timestamp = (uint32_t)GetTimestamp();
+
+  packet.weight = weight;
+  packet.temperature = temperature*100;
+  packet.humidity = humidity*100;
+
+  packet.external_temperature = 0;
+  packet.external_humidity = 0;
+
+  packet.crc = (uint16_t)HAL_CRC_Calculate(
+      &hcrc,
+      (uint32_t *)&packet,
+      sizeof(packet) - sizeof(packet.crc)
+  );
+
+  tx_success = TransmitPacket(&packet);
+
+  if(!tx_success)
+  {
+	  // failed after a packet TX
+	  packet.backlog++;
+	  packet.crc = (uint16_t)HAL_CRC_Calculate(
+	        &hcrc,
+	        (uint32_t *)&packet,
+	        sizeof(packet) - sizeof(packet.crc)
+	    );
+	  HAL_StatusTypeDef push_status = FRAM_Push(&packet);
+	  if(push_status != HAL_OK){
+		  Error_Handler();
+	  }
+  }
+
+  if(tx_success)
+  {
+	// okay, retry
+	while(FRAM_GetCount()){
+		if(FRAM_Peek(&packet) == HAL_OK)
+		{
+			tx_success = TransmitPacket(&packet);
+			if(!tx_success){
+				break;
+			}
+			FRAM_Pop();
+		}
+	}
+	if(FRAM_GetCount() == 0){
+		// no backlog
+		packet.backlog = 0;
+		packet.crc = (uint16_t)HAL_CRC_Calculate(
+			  &hcrc,
+			  (uint32_t *)&packet,
+			  sizeof(packet) - sizeof(packet.crc)
+		);
+	}
+  }
+
+  // Power Down
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
+
+  PowerOffDisplay();
+  EnterSleep();
   }
   /* USER CODE END 3 */
 }
@@ -270,9 +367,10 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI|RCC_OSCILLATORTYPE_LSI;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+  RCC_OscInitStruct.LSIState = RCC_LSI_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
@@ -291,6 +389,40 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief CRC Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_CRC_Init(void)
+{
+
+  /* USER CODE BEGIN CRC_Init 0 */
+
+  /* USER CODE END CRC_Init 0 */
+
+  /* USER CODE BEGIN CRC_Init 1 */
+
+  /* USER CODE END CRC_Init 1 */
+  hcrc.Instance = CRC;
+  hcrc.Init.DefaultPolynomialUse = DEFAULT_POLYNOMIAL_DISABLE;
+  hcrc.Init.DefaultInitValueUse = DEFAULT_INIT_VALUE_DISABLE;
+  hcrc.Init.GeneratingPolynomial = 4129;
+  hcrc.Init.CRCLength = CRC_POLYLENGTH_16B;
+  hcrc.Init.InitValue = 0xFFFF;
+  hcrc.Init.InputDataInversionMode = CRC_INPUTDATA_INVERSION_NONE;
+  hcrc.Init.OutputDataInversionMode = CRC_OUTPUTDATA_INVERSION_DISABLE;
+  hcrc.InputDataFormat = CRC_INPUTDATA_FORMAT_BYTES;
+  if (HAL_CRC_Init(&hcrc) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN CRC_Init 2 */
+
+  /* USER CODE END CRC_Init 2 */
+
 }
 
 /**
@@ -342,11 +474,56 @@ static void MX_I2C1_Init(void)
 }
 
 /**
+  * @brief RTC Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_RTC_Init(void)
+{
+
+  /* USER CODE BEGIN RTC_Init 0 */
+
+  /* USER CODE END RTC_Init 0 */
+
+  /* USER CODE BEGIN RTC_Init 1 */
+
+  /* USER CODE END RTC_Init 1 */
+
+  /** Initialize RTC Only
+  */
+  hrtc.Instance = RTC;
+  hrtc.Init.HourFormat = RTC_HOURFORMAT_24;
+  hrtc.Init.AsynchPrediv = 127;
+  hrtc.Init.SynchPrediv = 255;
+  hrtc.Init.OutPut = RTC_OUTPUT_DISABLE;
+  hrtc.Init.OutPutRemap = RTC_OUTPUT_REMAP_NONE;
+  hrtc.Init.OutPutPolarity = RTC_OUTPUT_POLARITY_HIGH;
+  hrtc.Init.OutPutType = RTC_OUTPUT_TYPE_OPENDRAIN;
+  hrtc.Init.OutPutPullUp = RTC_OUTPUT_PULLUP_NONE;
+  hrtc.Init.BinMode = RTC_BINARY_NONE;
+  if (HAL_RTC_Init(&hrtc) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Enable the WakeUp
+  */
+  if (HAL_RTCEx_SetWakeUpTimer_IT(&hrtc, 0, RTC_WAKEUPCLOCK_RTCCLK_DIV16, 0) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN RTC_Init 2 */
+
+  /* USER CODE END RTC_Init 2 */
+
+}
+
+/**
   * @brief SPI1 Initialization Function
   * @param None
   * @retval None
   */
-static void MX_SPI1_Init(void)
+void MX_SPI1_Init(void)
 {
 
   /* USER CODE BEGIN SPI1_Init 0 */
@@ -400,13 +577,13 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, RFM_CS_Pin|RFM_RST_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, RFM_CS_Pin|RFM_RST_Pin|FERAM_CS_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, TFT_CS_Pin|TFT_DC_Pin|TFT_RST_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, TFT_CS_Pin|TFT_DC_Pin|TFT_RST_Pin|TFT_PWR_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : RFM_CS_Pin RFM_RST_Pin */
-  GPIO_InitStruct.Pin = RFM_CS_Pin|RFM_RST_Pin;
+  /*Configure GPIO pins : RFM_CS_Pin RFM_RST_Pin FERAM_CS_Pin */
+  GPIO_InitStruct.Pin = RFM_CS_Pin|RFM_RST_Pin|FERAM_CS_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -418,12 +595,22 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(RFM_IRQ_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : TFT_CS_Pin TFT_DC_Pin TFT_RST_Pin */
-  GPIO_InitStruct.Pin = TFT_CS_Pin|TFT_DC_Pin|TFT_RST_Pin;
+  /*Configure GPIO pins : TFT_CS_Pin TFT_DC_Pin TFT_RST_Pin TFT_PWR_Pin */
+  GPIO_InitStruct.Pin = TFT_CS_Pin|TFT_DC_Pin|TFT_RST_Pin|TFT_PWR_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : DEBUG_REQUEST_Pin */
+  GPIO_InitStruct.Pin = DEBUG_REQUEST_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(DEBUG_REQUEST_GPIO_Port, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI4_15_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 
@@ -431,6 +618,22 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
+{
+    if (GPIO_Pin == DEBUG_REQUEST_Pin)
+    {
+        debug_requested = 1;
+    }
+}
+
+void HAL_GPIO_EXTI_Rising_Callback(uint16_t GPIO_Pin)
+{
+    if (GPIO_Pin == DEBUG_REQUEST_Pin)
+    {
+        debug_requested = 0;
+    }
+}
 
 /* USER CODE END 4 */
 
