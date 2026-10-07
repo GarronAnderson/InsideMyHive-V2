@@ -1,0 +1,5 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "SRN3015TA-2R2M")(type "KiCad")(uri "C:/Users/mfdal/Downloads/LIB_SRN3015TA-2R2M/SRN3015TA-2R2M/KiCad")(options "")(descr ""))
+  (lib (name "PTS647SN38SMTR2 LFS")(type "KiCad")(uri "C:/Users/mfdal/Downloads/LIB_PTS647SN38SMTR2_LFS/PTS647SN38SMTR2_LFS/KiCad")(options "")(descr ""))
+)

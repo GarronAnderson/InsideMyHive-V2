@@ -1,0 +1,2 @@
+with pcb cap set this for better ENOB
+setting Reg0x1C[7] PGA_CAP_EN bit to 1

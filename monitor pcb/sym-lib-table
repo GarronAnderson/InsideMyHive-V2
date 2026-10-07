@@ -1,0 +1,12 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "STM32")(type "KiCad")(uri "C:/Users/mfdal/Downloads/ul_STM32U031C8T6/KiCADv6/2026-10-04_19-24-55.kicad_sym")(options "")(descr ""))
+  (lib (name "NAU7802")(type "KiCad")(uri "C:/Users/mfdal/Downloads/NAU7802SGI/KiCADv6/2026-10-04_22-07-22.kicad_sym")(options "")(descr ""))
+  (lib (name "RFM95W")(type "KiCad")(uri "${KIPRJMOD}/RFM95W.kicad_sym")(options "")(descr ""))
+  (lib (name "TPS63900")(type "KiCad")(uri "C:/Users/mfdal/Downloads/TPS63900DSKR/KiCADv6/2026-10-05_02-32-06.kicad_sym")(options "")(descr ""))
+  (lib (name "HDC3022")(type "KiCad")(uri "C:/Users/mfdal/Downloads/HDC3022DEJR/KiCADv6/2026-10-05_02-58-06.kicad_sym")(options "")(descr ""))
+  (lib (name "BMP581")(type "KiCad")(uri "C:/Users/mfdal/Downloads/BMP581/KiCADv6/2026-10-05_14-21-35.kicad_sym")(options "")(descr ""))
+  (lib (name "TPS22919")(type "KiCad")(uri "C:/Users/mfdal/Downloads/TPS22919DCKR/KiCADv6/2026-10-06_18-01-15.kicad_sym")(options "")(descr ""))
+  (lib (name "TPD2E2U06")(type "KiCad")(uri "C:/Users/mfdal/Downloads/TPD2E2U06DCKR/KiCADv6/2026-10-06_19-25-52.kicad_sym")(options "")(descr ""))
+  (lib (name "Switch")(type "KiCad")(uri "C:/Users/mfdal/Downloads/LIB_PTS647SN38SMTR2_LFS/PTS647SN38SMTR2_LFS/KiCad/PTS647SN38SMTR2_LFS.kicad_sym")(options "")(descr ""))
+)
