@@ -9,4 +9,5 @@
   (lib (name "TPS22919")(type "KiCad")(uri "C:/Users/mfdal/Downloads/TPS22919DCKR/KiCADv6/2026-10-06_18-01-15.kicad_sym")(options "")(descr ""))
   (lib (name "TPD2E2U06")(type "KiCad")(uri "C:/Users/mfdal/Downloads/TPD2E2U06DCKR/KiCADv6/2026-10-06_19-25-52.kicad_sym")(options "")(descr ""))
   (lib (name "Switch")(type "KiCad")(uri "C:/Users/mfdal/Downloads/LIB_PTS647SN38SMTR2_LFS/PTS647SN38SMTR2_LFS/KiCad/PTS647SN38SMTR2_LFS.kicad_sym")(options "")(descr ""))
+  (lib (name "BMP585")(type "KiCad")(uri "C:/Users/mfdal/Downloads/BMP585/KiCADv6/2026-10-11_01-13-13.kicad_sym")(options "")(descr ""))
 )

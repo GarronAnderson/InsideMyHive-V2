@@ -1,0 +1,4 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "HDC3022")(type "KiCad")(uri "C:/Users/mfdal/Downloads/HDC3022DEJR/KiCADv6/footprints.pretty")(options "")(descr ""))
+)
