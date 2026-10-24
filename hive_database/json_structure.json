@@ -1,0 +1,12 @@
+{
+	"node_id": 0,
+	"timestamp": 0,
+	"backlog": 0,
+	"weight_raw": 0,
+	"hive_temp": 0,
+	"hive_humid": 0,
+	"ext_temp": 0,
+	"ext_humid": 0,
+	"baro": 0,
+	"rain_tips": 0
+}
