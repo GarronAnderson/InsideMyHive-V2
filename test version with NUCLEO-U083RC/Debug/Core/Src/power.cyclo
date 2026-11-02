@@ -1,0 +1,4 @@
+../Core/Src/power.c:22:6:EnterSleep	1
+../Core/Src/power.c:53:6:PowerUp	1
+../Core/Src/power.c:73:6:PowerOnDisplay	1
+../Core/Src/power.c:83:6:PowerOffDisplay	1

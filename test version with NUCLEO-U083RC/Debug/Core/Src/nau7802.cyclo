@@ -1,0 +1,9 @@
+../Core/Src/nau7802.c:71:19:NAU7802_ReadReg	1
+../Core/Src/nau7802.c:84:19:NAU7802_WriteReg	1
+../Core/Src/nau7802.c:97:19:NAU7802_UpdateReg	2
+../Core/Src/nau7802.c:114:9:NAU7802_Init	11
+../Core/Src/nau7802.c:160:9:NAU7802_Reset	4
+../Core/Src/nau7802.c:182:9:NAU7802_IsPowerReady	2
+../Core/Src/nau7802.c:192:9:NAU7802_PowerUp	4
+../Core/Src/nau7802.c:211:9:NAU7802_PowerDown	3
+../Core/Src/nau7802.c:226:19:NAU7802_ReadADC	3

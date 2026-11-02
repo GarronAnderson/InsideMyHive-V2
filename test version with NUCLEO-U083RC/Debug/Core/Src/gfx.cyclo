@@ -1,0 +1,12 @@
+../Core/Src/gfx.c:38:6:GFX_Init	1
+../Core/Src/gfx.c:55:6:GFX_SetCursor	1
+../Core/Src/gfx.c:66:6:GFX_SetTextColor	1
+../Core/Src/gfx.c:76:6:GFX_SetTextBackground	1
+../Core/Src/gfx.c:86:6:GFX_SetTextSize	2
+../Core/Src/gfx.c:101:6:GFX_SetTextWrap	1
+../Core/Src/gfx.c:111:6:GFX_FillRect	16
+../Core/Src/gfx.c:266:6:GFX_DrawRect	3
+../Core/Src/gfx.c:291:6:GFX_DrawFastHLine	1
+../Core/Src/gfx.c:304:6:GFX_DrawFastVLine	1
+../Core/Src/gfx.c:317:6:GFX_WriteChar	26
+../Core/Src/gfx.c:576:6:GFX_Print	3
