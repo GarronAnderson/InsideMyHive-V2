@@ -1,4 +1,6 @@
-CREATE TABLE readings (
+CREATE SCHEMA api;
+
+CREATE TABLE api.readings (
     node_id integer,
 	ts timestamptz,
 	ts_rxd timestamptz NOT NULL,

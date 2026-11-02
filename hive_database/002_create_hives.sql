@@ -6,6 +6,6 @@ CREATE TABLE hives (
 	location_desc VARCHAR(100)
 );
 
-ALTER TABLE readings
+ALTER TABLE api.readings
 ADD FOREIGN KEY (node_id) 
 REFERENCES hives (node_id);
