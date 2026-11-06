@@ -1,4 +1,5 @@
 #include "rfm95.h"
+#include <string.h>
 
 /*GLOBAL Variable**********************************************************************************/
 
@@ -46,13 +47,19 @@ HAL_StatusTypeDef lora_init(SX1276_HandleTypedef *sx1276,
 	lora_1 = *lora_config;
 
 	/*Hardware reset*/
+	HAL_GPIO_WritePin(sx1.rst_port, sx1.rst_pin, GPIO_PIN_SET);
+	HAL_Delay(5);
 	HAL_GPIO_WritePin(sx1.rst_port, sx1.rst_pin, GPIO_PIN_RESET);
 	HAL_Delay(1);
 	HAL_GPIO_WritePin(sx1.rst_port, sx1.rst_pin, GPIO_PIN_SET);
 	HAL_Delay(5);
 
-	/*checks address*/
 	uint8_t buffer;
+
+	result = platform_read(&sx1, REG_VERSION, &buffer, 1);
+	HAL_Delay(1);
+
+	/*checks address*/
 	result = platform_read(&sx1, REG_VERSION, &buffer, 1);
 	if (result != HAL_OK)
 		return HAL_ERROR;
@@ -155,27 +162,29 @@ static HAL_StatusTypeDef platform_write(SX1276_HandleTypedef *sx1276,
 }
 
 /* read register */
-static HAL_StatusTypeDef platform_read(SX1276_HandleTypedef *sx1276,
-		uint8_t reg, uint8_t *bufp, uint16_t len) {
-
+static HAL_StatusTypeDef platform_read(SX1276_HandleTypedef *sx, uint8_t reg,
+		uint8_t *bufp, uint16_t len) {
 	HAL_StatusTypeDef result;
 
-	if (sx1276 == NULL)
-		return HAL_ERROR;
+	uint8_t tx_buf[len + 1];
+	uint8_t rx_buf[len + 1];
 
-	HAL_GPIO_WritePin(sx1276->nss_port, sx1276->nss_pin, GPIO_PIN_RESET);
+	memset(tx_buf, 0x00, sizeof(tx_buf));
+	memset(rx_buf, 0x00, sizeof(rx_buf));
 
-	result = HAL_SPI_Transmit(sx1276->hspi, &reg, 1, 1000);
-	if (result != HAL_OK)
-		return HAL_ERROR;
-	result = HAL_SPI_Receive(sx1276->hspi, bufp, len, 1000);
-	if (result != HAL_OK)
-		return HAL_ERROR;
+	tx_buf[0] = reg & 0x7F;
 
-	HAL_GPIO_WritePin(sx1276->nss_port, sx1276->nss_pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(sx->nss_port, sx->nss_pin, GPIO_PIN_RESET);
+
+	result = HAL_SPI_TransmitReceive(sx->hspi, tx_buf, rx_buf, len + 1, 1000);
+
+	HAL_GPIO_WritePin(sx->nss_port, sx->nss_pin, GPIO_PIN_SET);
+
+	if (result == HAL_OK) {
+		memcpy(bufp, &rx_buf[1], len);
+	}
 
 	return result;
-
 }
 
 /* write FIFO register */

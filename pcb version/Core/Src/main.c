@@ -22,10 +22,24 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
+#include <stdio.h>
+
+#include "power.h"
+
 #include "gfx.h"
 #include "st7735.h"
 
-#include "power.h"
+#include "fram.h"
+#include "fram_queue.h"
+
+#include "rfm95.h"
+#include "hive_packet.h"
+
+#include "rtc.h"
+
+#include "nau7802.h"
+
+#include "menu.h"
 
 /* USER CODE END Includes */
 
@@ -36,6 +50,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+
+#define TIME_SYNC_INTERVAL_CYCLES 288   // ~daily at 5 min/cycle
 
 /* USER CODE END PD */
 
@@ -55,6 +71,16 @@ RTC_HandleTypeDef hrtc;
 SPI_HandleTypeDef hspi1;
 
 /* USER CODE BEGIN PV */
+
+HivePacket packet;
+
+volatile uint8_t debug_requested = 0;
+
+uint8_t tx_success = 0;
+
+int32_t weight;
+
+static uint32_t cycle_count = 0;
 
 /* USER CODE END PV */
 
@@ -111,6 +137,37 @@ int main(void) {
 	PowerOnDisplay();
 	GFX_Init();
 
+	FRAM_Init();
+	if (FRAM_QueueInit() != HAL_OK) {
+		GFX_SetCursor(2, 2);
+		GFX_SetTextColor(ST7735_RED);
+		GFX_Print("FRAM init failed");
+		Error_Handler();
+	}
+
+	if (NAU7802_Init() != 0) {
+		GFX_SetCursor(2, 2);
+		GFX_SetTextColor(ST7735_RED);
+		GFX_Print("NAU7802 init failed");
+		Error_Handler();
+	}
+
+	SX1276_HandleTypedef rfm95 = { .hspi = &hspi1, .nss_port = RFM_CS_GPIO_Port,
+			.nss_pin = RFM_CS_Pin, .rst_port = RFM_RST_GPIO_Port, .rst_pin =
+			RFM_RST_Pin };
+
+	LORA_CONFIG_TYPEDEF lora_config = { .frequency = 915000000UL,
+			.spreading_Factor = 7, .bandwidth = 125000, .coding_Rate = 5,
+			.tx_Power = 17, .use_Pa_Boost = 1, .preamble_Length = 8,
+			.sync_Word = 0x12, .enable_CRC = 1, .implicit_header = 0 };
+
+	if (lora_init(&rfm95, &lora_config) != HAL_OK) {
+		GFX_SetCursor(2, 2);
+		GFX_SetTextColor(ST7735_RED);
+		GFX_Print("RFM95 init failed");
+		Error_Handler();
+	}
+
 	GFX_SetTextSize(1);
 	GFX_SetCursor(2, 2);
 	GFX_SetTextColor(ST7735_YELLOW);
@@ -128,7 +185,79 @@ int main(void) {
 		/* USER CODE END WHILE */
 
 		/* USER CODE BEGIN 3 */
+
+		PowerUp();
+
+		if (debug_requested) {
+			debug_requested = 0;
+
+			PowerOnDisplay();
+			RunMenu();
+			EnterSleep();
+		}
+
+		// Powered On
+
+		NAU7802_ReadADC(&weight);
+
+		packet.version = 2;
+		packet.node_id = 1;
+		packet.sequence++;
+
+		packet.flags = 0;
+		if (!RTC_IsValid() || (cycle_count % TIME_SYNC_INTERVAL_CYCLES) == 0)
+			packet.flags |= FLAG_TIME_REQUEST;
+		cycle_count++;
+
+		packet.timestamp = (uint32_t) GetTimestamp();
+
+		packet.weight = weight;
+		packet.temperature = 0;
+		packet.humidity = 0;
+
+		packet.external_temperature = 0;
+		packet.external_humidity = 0;
+
+		packet.crc = (uint16_t) HAL_CRC_Calculate(&hcrc, (uint32_t*) &packet,
+				sizeof(packet) - sizeof(packet.crc));
+
+		tx_success = TransmitPacket(&packet);
+
+		if (!tx_success) {
+			// failed after a packet TX
+			packet.backlog++;
+			packet.crc = (uint16_t) HAL_CRC_Calculate(&hcrc,
+					(uint32_t*) &packet, sizeof(packet) - sizeof(packet.crc));
+			HAL_StatusTypeDef push_status = FRAM_Push(&packet);
+			if (push_status != HAL_OK) {
+				Error_Handler();
+			}
+		}
+
+		if (tx_success) {
+			// okay, retry
+			while (FRAM_GetCount()) {
+				if (FRAM_Peek(&packet) == HAL_OK) {
+					tx_success = TransmitPacket(&packet);
+					if (!tx_success) {
+						break;
+					}
+					FRAM_Pop();
+				}
+			}
+			if (FRAM_GetCount() == 0) {
+				// no backlog
+				packet.backlog = 0;
+				packet.crc = (uint16_t) HAL_CRC_Calculate(&hcrc,
+						(uint32_t*) &packet,
+						sizeof(packet) - sizeof(packet.crc));
+			}
+		}
+
+		// Power Down
+		EnterSleep();
 	}
+
 	/* USER CODE END 3 */
 }
 
@@ -190,8 +319,10 @@ static void MX_CRC_Init(void) {
 
 	/* USER CODE END CRC_Init 1 */
 	hcrc.Instance = CRC;
-	hcrc.Init.DefaultPolynomialUse = DEFAULT_POLYNOMIAL_ENABLE;
+	hcrc.Init.DefaultPolynomialUse = DEFAULT_POLYNOMIAL_DISABLE;
 	hcrc.Init.DefaultInitValueUse = DEFAULT_INIT_VALUE_ENABLE;
+	hcrc.Init.GeneratingPolynomial = 4129;
+	hcrc.Init.CRCLength = CRC_POLYLENGTH_16B;
 	hcrc.Init.InputDataInversionMode = CRC_INPUTDATA_INVERSION_NONE;
 	hcrc.Init.OutputDataInversionMode = CRC_OUTPUTDATA_INVERSION_DISABLE;
 	hcrc.InputDataFormat = CRC_INPUTDATA_FORMAT_BYTES;
@@ -277,6 +408,13 @@ static void MX_RTC_Init(void) {
 	hrtc.Init.OutPutPullUp = RTC_OUTPUT_PULLUP_NONE;
 	hrtc.Init.BinMode = RTC_BINARY_NONE;
 	if (HAL_RTC_Init(&hrtc) != HAL_OK) {
+		Error_Handler();
+	}
+
+	/** Enable the WakeUp
+	 */
+	if (HAL_RTCEx_SetWakeUpTimer_IT(&hrtc, 0, RTC_WAKEUPCLOCK_RTCCLK_DIV16, 0)
+			!= HAL_OK) {
 		Error_Handler();
 	}
 	/* USER CODE BEGIN RTC_Init 2 */
@@ -375,12 +513,24 @@ static void MX_GPIO_Init(void) {
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
+	/* EXTI interrupt init*/
+	HAL_NVIC_SetPriority(EXTI4_15_IRQn, 0, 0);
+	HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
+
 	/* USER CODE BEGIN MX_GPIO_Init_2 */
 
 	/* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
+
+void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin) {
+	if (GPIO_Pin == DEBUG_REQUEST_Pin) {
+		debug_requested = 1;
+	} else {
+		__NOP();
+	}
+}
 
 /* USER CODE END 4 */
 

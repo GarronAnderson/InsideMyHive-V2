@@ -1,0 +1,5 @@
+../Core/Src/rtc.c:22:8:GetTimestamp	1
+../Core/Src/rtc.c:41:9:RTC_IsValid	1
+../Core/Src/rtc.c:45:6:RTC_SetFromUnix	2
+../Core/Src/rtc.c:68:6:RTC_GetDateString	1
+../Core/Src/rtc.c:79:6:RTC_GetTimeString	1

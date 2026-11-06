@@ -61,7 +61,7 @@ main-build: pcb\ version.elf secondary-outputs
 
 # Tool invocations
 pcb\ version.elf pcb\ version.map: $(OBJS) $(USER_OBJS) C:\Users\mfdal\Desktop\Projects\Garron\01\ Bee\ Hive\ Monitor\V2\ Monitor\ STM32\pcb\ version\STM32U031C8TX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "pcb version.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m0plus -T"C:\Users\mfdal\Desktop\Projects\Garron\01 Bee Hive Monitor\V2 Monitor STM32\pcb version\STM32U031C8TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="pcb version.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+	arm-none-eabi-gcc -o "pcb version.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m0plus -T"C:\Users\mfdal\Desktop\Projects\Garron\01 Bee Hive Monitor\V2 Monitor STM32\pcb version\STM32U031C8TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="pcb version.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

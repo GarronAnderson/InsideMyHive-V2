@@ -30,6 +30,14 @@ static void FRAM_CS_High(void) {
 	FRAM_CS_Pin, GPIO_PIN_SET);
 }
 
+HAL_StatusTypeDef FRAM_Wake(void) {
+	FRAM_CS_Low();
+	HAL_Delay(1);
+	FRAM_CS_High();
+	HAL_Delay(1);
+	return HAL_OK;
+}
+
 static HAL_StatusTypeDef FRAM_SendAddress(uint32_t address) {
 	uint8_t addr[3];
 

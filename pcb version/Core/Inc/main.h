@@ -71,14 +71,18 @@ void Error_Handler(void);
 #define RFM_CS_GPIO_Port GPIOB
 #define RFM_IRQ_Pin GPIO_PIN_8
 #define RFM_IRQ_GPIO_Port GPIOA
+#define RFM_IRQ_EXTI_IRQn EXTI4_15_IRQn
 #define DEBUG_REQUEST_Pin GPIO_PIN_10
 #define DEBUG_REQUEST_GPIO_Port GPIOA
+#define DEBUG_REQUEST_EXTI_IRQn EXTI4_15_IRQn
 #define FRAM_CS_Pin GPIO_PIN_15
 #define FRAM_CS_GPIO_Port GPIOA
 #define NAU_DRDY_Pin GPIO_PIN_6
 #define NAU_DRDY_GPIO_Port GPIOB
+#define NAU_DRDY_EXTI_IRQn EXTI4_15_IRQn
 #define RAIN_EXTI_Pin GPIO_PIN_7
 #define RAIN_EXTI_GPIO_Port GPIOB
+#define RAIN_EXTI_EXTI_IRQn EXTI4_15_IRQn
 
 /* USER CODE BEGIN Private defines */
 

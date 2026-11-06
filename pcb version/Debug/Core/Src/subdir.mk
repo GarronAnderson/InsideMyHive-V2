@@ -11,9 +11,11 @@ C_SRCS += \
 ../Core/Src/gfx.c \
 ../Core/Src/hive_packet.c \
 ../Core/Src/main.c \
+../Core/Src/menu.c \
 ../Core/Src/nau7802.c \
 ../Core/Src/power.c \
 ../Core/Src/rfm95.c \
+../Core/Src/rtc.c \
 ../Core/Src/st7735.c \
 ../Core/Src/stm32u0xx_hal_msp.c \
 ../Core/Src/stm32u0xx_it.c \
@@ -28,9 +30,11 @@ OBJS += \
 ./Core/Src/gfx.o \
 ./Core/Src/hive_packet.o \
 ./Core/Src/main.o \
+./Core/Src/menu.o \
 ./Core/Src/nau7802.o \
 ./Core/Src/power.o \
 ./Core/Src/rfm95.o \
+./Core/Src/rtc.o \
 ./Core/Src/st7735.o \
 ./Core/Src/stm32u0xx_hal_msp.o \
 ./Core/Src/stm32u0xx_it.o \
@@ -45,9 +49,11 @@ C_DEPS += \
 ./Core/Src/gfx.d \
 ./Core/Src/hive_packet.d \
 ./Core/Src/main.d \
+./Core/Src/menu.d \
 ./Core/Src/nau7802.d \
 ./Core/Src/power.d \
 ./Core/Src/rfm95.d \
+./Core/Src/rtc.d \
 ./Core/Src/st7735.d \
 ./Core/Src/stm32u0xx_hal_msp.d \
 ./Core/Src/stm32u0xx_it.d \
@@ -63,7 +69,7 @@ Core/Src/%.o Core/Src/%.su Core/Src/%.cyclo: ../Core/Src/%.c Core/Src/subdir.mk
 clean: clean-Core-2f-Src
 
 clean-Core-2f-Src:
-	-$(RM) ./Core/Src/font5x7.cyclo ./Core/Src/font5x7.d ./Core/Src/font5x7.o ./Core/Src/font5x7.su ./Core/Src/fram.cyclo ./Core/Src/fram.d ./Core/Src/fram.o ./Core/Src/fram.su ./Core/Src/fram_queue.cyclo ./Core/Src/fram_queue.d ./Core/Src/fram_queue.o ./Core/Src/fram_queue.su ./Core/Src/gfx.cyclo ./Core/Src/gfx.d ./Core/Src/gfx.o ./Core/Src/gfx.su ./Core/Src/hive_packet.cyclo ./Core/Src/hive_packet.d ./Core/Src/hive_packet.o ./Core/Src/hive_packet.su ./Core/Src/main.cyclo ./Core/Src/main.d ./Core/Src/main.o ./Core/Src/main.su ./Core/Src/nau7802.cyclo ./Core/Src/nau7802.d ./Core/Src/nau7802.o ./Core/Src/nau7802.su ./Core/Src/power.cyclo ./Core/Src/power.d ./Core/Src/power.o ./Core/Src/power.su ./Core/Src/rfm95.cyclo ./Core/Src/rfm95.d ./Core/Src/rfm95.o ./Core/Src/rfm95.su ./Core/Src/st7735.cyclo ./Core/Src/st7735.d ./Core/Src/st7735.o ./Core/Src/st7735.su ./Core/Src/stm32u0xx_hal_msp.cyclo ./Core/Src/stm32u0xx_hal_msp.d ./Core/Src/stm32u0xx_hal_msp.o ./Core/Src/stm32u0xx_hal_msp.su ./Core/Src/stm32u0xx_it.cyclo ./Core/Src/stm32u0xx_it.d ./Core/Src/stm32u0xx_it.o ./Core/Src/stm32u0xx_it.su ./Core/Src/syscalls.cyclo ./Core/Src/syscalls.d ./Core/Src/syscalls.o ./Core/Src/syscalls.su ./Core/Src/sysmem.cyclo ./Core/Src/sysmem.d ./Core/Src/sysmem.o ./Core/Src/sysmem.su ./Core/Src/system_stm32u0xx.cyclo ./Core/Src/system_stm32u0xx.d ./Core/Src/system_stm32u0xx.o ./Core/Src/system_stm32u0xx.su
+	-$(RM) ./Core/Src/font5x7.cyclo ./Core/Src/font5x7.d ./Core/Src/font5x7.o ./Core/Src/font5x7.su ./Core/Src/fram.cyclo ./Core/Src/fram.d ./Core/Src/fram.o ./Core/Src/fram.su ./Core/Src/fram_queue.cyclo ./Core/Src/fram_queue.d ./Core/Src/fram_queue.o ./Core/Src/fram_queue.su ./Core/Src/gfx.cyclo ./Core/Src/gfx.d ./Core/Src/gfx.o ./Core/Src/gfx.su ./Core/Src/hive_packet.cyclo ./Core/Src/hive_packet.d ./Core/Src/hive_packet.o ./Core/Src/hive_packet.su ./Core/Src/main.cyclo ./Core/Src/main.d ./Core/Src/main.o ./Core/Src/main.su ./Core/Src/menu.cyclo ./Core/Src/menu.d ./Core/Src/menu.o ./Core/Src/menu.su ./Core/Src/nau7802.cyclo ./Core/Src/nau7802.d ./Core/Src/nau7802.o ./Core/Src/nau7802.su ./Core/Src/power.cyclo ./Core/Src/power.d ./Core/Src/power.o ./Core/Src/power.su ./Core/Src/rfm95.cyclo ./Core/Src/rfm95.d ./Core/Src/rfm95.o ./Core/Src/rfm95.su ./Core/Src/rtc.cyclo ./Core/Src/rtc.d ./Core/Src/rtc.o ./Core/Src/rtc.su ./Core/Src/st7735.cyclo ./Core/Src/st7735.d ./Core/Src/st7735.o ./Core/Src/st7735.su ./Core/Src/stm32u0xx_hal_msp.cyclo ./Core/Src/stm32u0xx_hal_msp.d ./Core/Src/stm32u0xx_hal_msp.o ./Core/Src/stm32u0xx_hal_msp.su ./Core/Src/stm32u0xx_it.cyclo ./Core/Src/stm32u0xx_it.d ./Core/Src/stm32u0xx_it.o ./Core/Src/stm32u0xx_it.su ./Core/Src/syscalls.cyclo ./Core/Src/syscalls.d ./Core/Src/syscalls.o ./Core/Src/syscalls.su ./Core/Src/sysmem.cyclo ./Core/Src/sysmem.d ./Core/Src/sysmem.o ./Core/Src/sysmem.su ./Core/Src/system_stm32u0xx.cyclo ./Core/Src/system_stm32u0xx.d ./Core/Src/system_stm32u0xx.o ./Core/Src/system_stm32u0xx.su
 
 .PHONY: clean-Core-2f-Src
 

@@ -33,7 +33,6 @@ extern "C" {
 #define ST7735_WIDTH       160
 #define ST7735_HEIGHT       80
 
-
 /* ------------------------------------------------------------------------- */
 /* ST7735 commands                                                           */
 /* ------------------------------------------------------------------------- */
@@ -83,7 +82,6 @@ extern "C" {
 #define ST7735_GMCTRP1      0xE0
 #define ST7735_GMCTRN1      0xE1
 
-
 /* ------------------------------------------------------------------------- */
 /* MADCTL bits                                                               */
 /* ------------------------------------------------------------------------- */
@@ -95,7 +93,6 @@ extern "C" {
 #define ST7735_MADCTL_RGB   0x00
 #define ST7735_MADCTL_BGR   0x08
 #define ST7735_MADCTL_MH    0x04
-
 
 /* ------------------------------------------------------------------------- */
 /* RGB565 colors                                                             */
@@ -113,7 +110,6 @@ extern "C" {
 #define ST7735_GREENYELLOW  0xAFE5
 #define ST7735_PINK         0xF81F
 
-
 /* ------------------------------------------------------------------------- */
 /* Public functions                                                          */
 /* ------------------------------------------------------------------------- */
@@ -124,24 +120,17 @@ void ST7735_Reset(void);
 
 void ST7735_SetRotation(uint8_t rotation);
 
-void ST7735_SetAddressWindow(uint16_t x0,
-                             uint16_t y0,
-                             uint16_t x1,
-                             uint16_t y1);
+void ST7735_SetAddressWindow(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1);
 
 void ST7735_Fill(uint16_t color);
 
-void ST7735_DrawPixel(uint16_t x,
-                      uint16_t y,
-                      uint16_t color);
+void ST7735_DrawPixel(uint16_t x, uint16_t y, uint16_t color);
 
-void ST7735_WritePixels(const uint8_t *data,
-                        uint16_t size);
+void ST7735_WritePixels(const uint8_t *data, uint16_t size);
 
-void ST7735_WriteCommand(uint8_t command);
+HAL_StatusTypeDef ST7735_WriteCommand(uint8_t command);
 
-void ST7735_WriteData(const uint8_t *data,
-                      uint16_t size);
+void ST7735_WriteData(const uint8_t *data, uint16_t size);
 
 void ST7735_DisplayOn(void);
 

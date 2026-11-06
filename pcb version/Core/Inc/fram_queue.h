@@ -10,7 +10,7 @@
 
 #include "hive_packet.h"
 
-void FRAM_QueueInit(void);
+HAL_StatusTypeDef FRAM_QueueInit(void);
 HAL_StatusTypeDef FRAM_Push(const HivePacket *packet);
 HAL_StatusTypeDef FRAM_Peek(HivePacket *packet);
 HAL_StatusTypeDef FRAM_Pop(void);

@@ -25,4 +25,6 @@ HAL_StatusTypeDef FRAM_WriteEnable(void);
 
 HAL_StatusTypeDef FRAM_Sleep(void);
 
+HAL_StatusTypeDef FRAM_Wake(void);
+
 #endif /* INC_FRAM_H_ */
