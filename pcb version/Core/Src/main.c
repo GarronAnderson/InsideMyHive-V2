@@ -75,12 +75,15 @@ SPI_HandleTypeDef hspi1;
 HivePacket packet;
 
 volatile uint8_t debug_requested = 0;
+volatile uint8_t in_menu = 0;
 
 uint8_t tx_success = 0;
 
 int32_t weight;
 
 static uint32_t cycle_count = 0;
+
+uint8_t node_id = 0;
 
 /* USER CODE END PV */
 
@@ -186,76 +189,91 @@ int main(void) {
 
 		/* USER CODE BEGIN 3 */
 
-		PowerUp();
-
+		// we just woke up
 		if (debug_requested) {
 			debug_requested = 0;
+			in_menu = 1; // ignore interrupts from the button pin while in menu,
+						 // otherwise we get stuck in a loop where an exit requests
+						 // that we enter debug.
 
 			PowerOnDisplay();
 			RunMenu();
+
+			// naptime!
+			in_menu = 0;
+			PowerOffDisplay();
+			HAL_Delay(50); // debounce delay
 			EnterSleep();
-		}
+			PowerUp();
+		} else {
 
-		// Powered On
+			// Powered On
 
-		NAU7802_ReadADC(&weight);
+			NAU7802_ReadADC(&weight);
 
-		packet.version = 2;
-		packet.node_id = 1;
-		packet.sequence++;
+			packet.version = 2;
 
-		packet.flags = 0;
-		if (!RTC_IsValid() || (cycle_count % TIME_SYNC_INTERVAL_CYCLES) == 0)
-			packet.flags |= FLAG_TIME_REQUEST;
-		cycle_count++;
+			FRAM_GetNodeID(&node_id);
+			packet.node_id = node_id;
 
-		packet.timestamp = (uint32_t) GetTimestamp();
+			packet.sequence++;
 
-		packet.weight = weight;
-		packet.temperature = 0;
-		packet.humidity = 0;
+			packet.flags = 0;
+			if (!RTC_IsValid()
+					|| (cycle_count % TIME_SYNC_INTERVAL_CYCLES) == 0)
+				packet.flags |= FLAG_TIME_REQUEST;
+			cycle_count++;
 
-		packet.external_temperature = 0;
-		packet.external_humidity = 0;
+			packet.timestamp = (uint32_t) GetTimestamp();
 
-		packet.crc = (uint16_t) HAL_CRC_Calculate(&hcrc, (uint32_t*) &packet,
-				sizeof(packet) - sizeof(packet.crc));
+			packet.weight = weight;
+			packet.temperature = 0;
+			packet.humidity = 0;
 
-		tx_success = TransmitPacket(&packet);
+			packet.external_temperature = 0;
+			packet.external_humidity = 0;
 
-		if (!tx_success) {
-			// failed after a packet TX
-			packet.backlog++;
 			packet.crc = (uint16_t) HAL_CRC_Calculate(&hcrc,
 					(uint32_t*) &packet, sizeof(packet) - sizeof(packet.crc));
-			HAL_StatusTypeDef push_status = FRAM_Push(&packet);
-			if (push_status != HAL_OK) {
-				Error_Handler();
-			}
-		}
 
-		if (tx_success) {
-			// okay, retry
-			while (FRAM_GetCount()) {
-				if (FRAM_Peek(&packet) == HAL_OK) {
-					tx_success = TransmitPacket(&packet);
-					if (!tx_success) {
-						break;
-					}
-					FRAM_Pop();
-				}
-			}
-			if (FRAM_GetCount() == 0) {
-				// no backlog
-				packet.backlog = 0;
+			tx_success = TransmitPacket(&packet);
+
+			if (!tx_success) {
+				// failed after a packet TX
+				packet.backlog++;
 				packet.crc = (uint16_t) HAL_CRC_Calculate(&hcrc,
 						(uint32_t*) &packet,
 						sizeof(packet) - sizeof(packet.crc));
+				HAL_StatusTypeDef push_status = FRAM_Push(&packet);
+				if (push_status != HAL_OK) {
+					Error_Handler();
+				}
 			}
-		}
 
-		// Power Down
-		EnterSleep();
+			if (tx_success) {
+				// okay, retry
+				while (FRAM_GetCount()) {
+					if (FRAM_Peek(&packet) == HAL_OK) {
+						tx_success = TransmitPacket(&packet);
+						if (!tx_success) {
+							break;
+						}
+						FRAM_Pop();
+					}
+				}
+				if (FRAM_GetCount() == 0) {
+					// no backlog
+					packet.backlog = 0;
+					packet.crc = (uint16_t) HAL_CRC_Calculate(&hcrc,
+							(uint32_t*) &packet,
+							sizeof(packet) - sizeof(packet.crc));
+				}
+			}
+
+			// naptime!
+			EnterSleep();
+			PowerUp();
+		}
 	}
 
 	/* USER CODE END 3 */
@@ -525,7 +543,7 @@ static void MX_GPIO_Init(void) {
 /* USER CODE BEGIN 4 */
 
 void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin) {
-	if (GPIO_Pin == DEBUG_REQUEST_Pin) {
+	if ((GPIO_Pin == DEBUG_REQUEST_Pin) && (in_menu == 0)) {
 		debug_requested = 1;
 	} else {
 		__NOP();

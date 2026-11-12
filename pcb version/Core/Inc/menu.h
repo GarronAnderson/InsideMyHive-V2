@@ -15,11 +15,16 @@ typedef enum {
 } ButtonEvent;
 
 typedef enum {
-	SCREEN_HOME, SCREEN_STATUS, SCREEN_SENSORS, SCREEN_TX, SCREEN_SETTINGS
+	SCREEN_HOME,
+	SCREEN_STATUS,
+	SCREEN_SENSORS,
+	SCREEN_TX,
+	SCREEN_SETTINGS,
+	SCREEN_EXIT
 } MenuScreen;
 
-static const char *menuItems[] =
-		{ "STATUS", "SENSORS", "TX", "SETTINGS", "EXIT" };
+static const char *menuItems[] = { "RTC AND QUEUE", "SENSORS", "LIVE TX",
+		"SETTINGS", "EXIT" };
 
 #define MENU_COUNT (sizeof(menuItems) / sizeof(menuItems[0]))
 

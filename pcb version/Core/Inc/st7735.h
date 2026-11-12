@@ -109,6 +109,9 @@ extern "C" {
 #define ST7735_ORANGE       0xFD20
 #define ST7735_GREENYELLOW  0xAFE5
 #define ST7735_PINK         0xF81F
+#define ST7735_GRAY         0xC618
+#define ST7735_CHARCOAL     0x18E3
+#define ST7735_OFFWHT       0xAE18
 
 /* ------------------------------------------------------------------------- */
 /* Public functions                                                          */

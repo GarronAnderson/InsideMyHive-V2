@@ -16,4 +16,7 @@ HAL_StatusTypeDef FRAM_Peek(HivePacket *packet);
 HAL_StatusTypeDef FRAM_Pop(void);
 uint16_t FRAM_GetCount(void);
 
+HAL_StatusTypeDef FRAM_SetNodeID(uint8_t node_id);
+HAL_StatusTypeDef FRAM_GetNodeID(uint8_t *node_id);
+
 #endif /* INC_FRAM_QUEUE_H_ */

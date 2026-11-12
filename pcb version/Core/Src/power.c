@@ -72,9 +72,7 @@ void EnterSleep(void) {
 	PowerOffDisplay();
 
 	NAU7802_PowerDown();
-
 	lora_sleep();
-
 	FRAM_Sleep();
 
 	/* Stop SPI completely */
@@ -85,8 +83,6 @@ void EnterSleep(void) {
 	/* Stop SysTick */
 	HAL_SuspendTick();
 
-	/* Disable debugger in STOP mode */
-	//HAL_DBGMCU_DisableDBGStopMode();
 	/* Set RTC wake-up timer */
 	HAL_RTCEx_SetWakeUpTimer_IT(&hrtc,
 	SLEEP_TIME,

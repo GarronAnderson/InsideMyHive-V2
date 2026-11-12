@@ -9,6 +9,7 @@
 #include "fram_queue.h"
 #include "hive_packet.h"
 
+#define NODE_ID_ADDR    6
 #define TAIL_ADDR       8
 #define HEAD_ADDR       10
 #define COUNT_ADDR      12
@@ -150,4 +151,12 @@ uint16_t FRAM_GetCount(void) {
 	FRAM_Read(COUNT_ADDR, (uint8_t*) &count, sizeof(count));
 
 	return count;
+}
+
+HAL_StatusTypeDef FRAM_SetNodeID(uint8_t node_id) {
+	return FRAM_Write(NODE_ID_ADDR, (uint8_t*) &node_id, sizeof(node_id));
+}
+
+HAL_StatusTypeDef FRAM_GetNodeID(uint8_t *node_id) {
+	return FRAM_Read(NODE_ID_ADDR, (uint8_t*) &node_id, sizeof(node_id));
 }
