@@ -211,7 +211,7 @@ int main(void) {
 
 			NAU7802_ReadADC(&weight);
 
-			packet.version = 2;
+			packet.version = 3;
 
 			FRAM_GetNodeID(&node_id);
 			packet.node_id = node_id;
@@ -224,6 +224,10 @@ int main(void) {
 				packet.flags |= FLAG_TIME_REQUEST;
 			cycle_count++;
 
+			// currently, these sensors aren't installed
+			packet.flags |= (FLAG_INT_HDC3022_ERROR | FLAG_EXT_HDC3022_ERROR
+					| FLAG_BMP585_ERROR);
+
 			packet.timestamp = (uint32_t) GetTimestamp();
 
 			packet.weight = weight;
@@ -232,6 +236,10 @@ int main(void) {
 
 			packet.external_temperature = 0;
 			packet.external_humidity = 0;
+
+			packet.baro_pressure = 0;
+
+			packet.rain_tips = 0;
 
 			packet.crc = (uint16_t) HAL_CRC_Calculate(&hcrc,
 					(uint32_t*) &packet, sizeof(packet) - sizeof(packet.crc));

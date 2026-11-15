@@ -18,6 +18,7 @@
 #include "nau7802.h"
 #include "rfm95.h"
 #include "power.h"
+#include "hive_packet.h"
 
 #define BUTTON_DEBOUNCE_MS  30
 #define BUTTON_LONG_MS      750
@@ -228,11 +229,12 @@ static void DrawMenu(void) {
 
 		if (HAL_GetTick() - last_screen_update >= LIVE_TX_PERIOD) {
 			last_screen_update = HAL_GetTick();
-			packet.version = 2;
+			packet.version = 3;
 			packet.node_id = 0;
 			packet.sequence++;
 
 			packet.flags = 0;
+			packet.flags |= FLAG_TEST_PACKET;
 
 			packet.timestamp = (uint32_t) GetTimestamp();
 
@@ -242,6 +244,10 @@ static void DrawMenu(void) {
 
 			packet.external_temperature = 0;
 			packet.external_humidity = 0;
+
+			packet.baro_pressure = 0;
+
+			packet.rain_tips = 0;
 
 			packet.crc = (uint16_t) HAL_CRC_Calculate(&hcrc,
 					(uint32_t*) &packet, sizeof(packet) - sizeof(packet.crc));
