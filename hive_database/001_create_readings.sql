@@ -16,5 +16,9 @@ CREATE TABLE api.readings (
 	lora_snr_db real,
 	backlog integer,
 	suspect_packet boolean,
+	int_hdc3022_error boolean,
+	ext_hdc3022_error boolean,
+	bmp585_error boolean,
+	nau7802_error boolean,
 	PRIMARY KEY (node_id, ts)
 );

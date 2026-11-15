@@ -1,0 +1,19 @@
+"""
+Send ntfy.sh alerts for hive or gateway down.
+"""
+
+import datetime
+import shelve
+
+import psycopg2
+
+# === USER INPUT ===
+
+NTFY_URL = "https://ntfy.sh/ganderson_hivestatus"
+
+NOTIFICATION_REPEAT_COUNT = 3
+NOTIFICATION_REPEAT_INTERVAL = 60 # mi ns
+
+NOTIFICATION_DOWNTIME_START = "21:00:00-0
+
+# === END USER INPUT ===
