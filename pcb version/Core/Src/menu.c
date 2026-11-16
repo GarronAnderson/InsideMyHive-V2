@@ -20,8 +20,9 @@
 #include "power.h"
 #include "hive_packet.h"
 
+#define MENU_DRAW_INTERVAL  100 //ms
 #define BUTTON_DEBOUNCE_MS  30
-#define BUTTON_LONG_MS      750
+#define BUTTON_LONG_MS      500
 #define LIVE_TX_PERIOD      2000
 
 #define COLOR_NORMAL_BG   ST7735_CHARCOAL
@@ -39,7 +40,8 @@ extern HivePacket packet;
 extern CRC_HandleTypeDef hcrc;
 
 uint8_t menu_tx_success = 0;
-uint8_t menu_node_id = 0;
+uint8_t menu_node_id;
+uint16_t menu_sleep_time;
 uint32_t last_screen_update = 0;
 
 bool exit_menu = false;
@@ -103,6 +105,18 @@ ButtonEvent ReadButton(void) {
 static void DrawMenu(void) {
 	if (currentScreen != oldScreen) {
 		ST7735_Fill(ST7735_CHARCOAL);
+		switch (currentScreen) {
+		case SCREEN_HOME:
+			currentHighlighted = 0;
+			break;
+		case SCREEN_STATUS:
+			currentSelected = 1;
+			break;
+		case SCREEN_SETTINGS:
+			currentSelected = 2;
+		default:
+			break;
+		}
 	}
 
 	switch (currentScreen) {
@@ -169,21 +183,12 @@ static void DrawMenu(void) {
 		GFX_SetCursor(5, 41);
 		GFX_Print(backlog_buffer);
 
-		if (currentSelected == 1) {
-			GFX_SetTextColor(ST7735_OFFWHT);
-			GFX_SetCursor(5, 53);
-			GFX_Print("Clear Backlog");
-			GFX_SetTextColor(ST7735_MAGENTA);
-			GFX_SetCursor(5, 65);
-			GFX_Print("BACK");
-		} else {
-			GFX_SetTextColor(ST7735_MAGENTA);
-			GFX_SetCursor(5, 53);
-			GFX_Print("Clear Backlog");
-			GFX_SetTextColor(ST7735_OFFWHT);
-			GFX_SetCursor(5, 65);
-			GFX_Print("BACK");
-		}
+		GFX_SetTextColor(currentSelected == 0 ? ST7735_MAGENTA : ST7735_OFFWHT);
+		GFX_SetCursor(5, 53);
+		GFX_Print("Clear Backlog");
+		GFX_SetTextColor(currentSelected == 1 ? ST7735_MAGENTA : ST7735_OFFWHT);
+		GFX_SetCursor(5, 65);
+		GFX_Print("BACK");
 
 		break;
 
@@ -284,60 +289,58 @@ static void DrawMenu(void) {
 
 				GFX_SetCursor(5, 41);
 				GFX_Print(snr_buffer);
-
-				GFX_SetTextColor(ST7735_MAGENTA);
-				GFX_SetCursor(5, 65);
-				GFX_Print("BACK");
 			}
+
+			GFX_SetTextColor(ST7735_MAGENTA);
+			GFX_SetCursor(5, 65);
+			GFX_Print("BACK");
 		}
 		break;
 
 	case SCREEN_SETTINGS:
 		FRAM_GetNodeID(&menu_node_id);
-		char node_id_buffer[24];
-		snprintf(node_id_buffer, sizeof(node_id_buffer), "Node ID: %d",
+		char node_id_buffer[14];
+		snprintf(node_id_buffer, sizeof(node_id_buffer), "Node ID: %d ",
 				menu_node_id);
-		GFX_SetTextColor(ST7735_OFFWHT);
+
+		FRAM_GetSleepTime(&menu_sleep_time);
+		char sleep_time_buffer[30];
+		uint8_t sleep_time_mins = menu_sleep_time / 60;
+
+		if (menu_sleep_time < 60) {
+			snprintf(sleep_time_buffer, sizeof(sleep_time_buffer),
+					"Sleep Time: %d secs     ", menu_sleep_time);
+		} else if (sleep_time_mins == 1) {
+			snprintf(sleep_time_buffer, sizeof(sleep_time_buffer),
+					"Sleep Time: %d min     ", menu_sleep_time / 60);
+		} else {
+			snprintf(sleep_time_buffer, sizeof(sleep_time_buffer),
+					"Sleep Time: %d mins     ", menu_sleep_time / 60);
+		}
+
 		GFX_SetTextBackground(ST7735_CHARCOAL);
+		GFX_SetTextColor(currentSelected == 0 ? ST7735_MAGENTA : ST7735_OFFWHT);
 		GFX_SetCursor(5, 5);
 		GFX_Print(node_id_buffer);
 
-		GFX_SetTextColor(ST7735_MAGENTA);
+		GFX_SetCursor(5, 17);
+		GFX_SetTextColor(currentSelected == 1 ? ST7735_MAGENTA : ST7735_OFFWHT);
+		GFX_Print(sleep_time_buffer);
+
+		GFX_SetTextColor(currentSelected == 2 ? ST7735_MAGENTA : ST7735_OFFWHT);
 		GFX_SetCursor(5, 65);
 		GFX_Print("BACK");
 		break;
 
 	case SCREEN_EXIT:
 		ST7735_Fill(ST7735_BLACK);
+		exit_menu = true;
 		break;
 
 	}
 }
 
-static void NextMenuItem(void) {
-	if (currentScreen == SCREEN_HOME) {
-		currentHighlighted++;
-	} else {
-		currentSelected++;
-	}
-	if (currentHighlighted >= MENU_COUNT) {
-		currentHighlighted = 0;
-	}
-
-	switch (currentScreen) {
-	case SCREEN_STATUS:
-		if (currentSelected >= 2) {
-			currentSelected = 0;
-		}
-		break;
-
-	default:
-		break;
-
-	}
-}
-
-static void SelectItem(void) {
+static void HandleShortPress(void) {
 	switch (currentScreen) {
 	case SCREEN_HOME:
 		if (currentHighlighted == 4) {
@@ -349,10 +352,64 @@ static void SelectItem(void) {
 	case SCREEN_STATUS:
 		if (currentSelected == 1) {
 			currentScreen = SCREEN_HOME;
+		} else if (currentSelected == 0) {
+			FRAM_QueueInit(); // clear the queue
+		}
+		break;
+
+	case SCREEN_SETTINGS:
+		if (currentSelected == 0) {
+			FRAM_GetNodeID(&menu_node_id);
+			menu_node_id++;
+			if (menu_node_id > 10) {
+				menu_node_id = 0;
+			}
+			FRAM_SetNodeID(menu_node_id);
+		} else if (currentSelected == 1) {
+			FRAM_GetSleepTime(&menu_sleep_time);
+			if (menu_sleep_time < 60) {
+				menu_sleep_time += 5;
+			} else if (60 <= menu_sleep_time && menu_sleep_time < 600) {
+				menu_sleep_time += 60;
+			} else {
+				menu_sleep_time = 5;
+			}
+			FRAM_SetSleepTime(menu_sleep_time);
+		} else if (currentSelected == 2) {
+			currentScreen = SCREEN_HOME;
 		}
 		break;
 	default:
 		currentScreen = SCREEN_HOME;
+		break;
+
+	}
+}
+
+static void HandleLongPress(void) {
+	switch (currentScreen) {
+	case SCREEN_HOME:
+		currentSelected = 0;
+		currentHighlighted++;
+		if (currentHighlighted >= MENU_COUNT) {
+			currentHighlighted = 0;
+		}
+		break;
+	case SCREEN_STATUS:
+		currentSelected++;
+		if (currentSelected >= 2) {
+			currentSelected = 0;
+		}
+		break;
+
+	case SCREEN_SETTINGS:
+		currentSelected++;
+		if (currentSelected > 2) {
+			currentSelected = 0;
+		}
+		break;
+	default:
+		break;
 	}
 }
 
@@ -365,6 +422,8 @@ void RunMenu(void) {
 	oldScreen = SCREEN_STATUS;
 
 	exit_menu = false;
+	uint32_t last_draw = HAL_GetTick();
+
 	while (!exit_menu) {
 
 		menu_action = ReadButton();
@@ -372,19 +431,22 @@ void RunMenu(void) {
 		switch (menu_action) {
 
 		case BUTTON_LONG:
-			SelectItem();
+			HandleLongPress();
 			break;
 
 		case BUTTON_SHORT:
-			NextMenuItem();
+			HandleShortPress();
 			break;
 
 		case BUTTON_NONE:
 			break;
 		}
 
-		DrawMenu();
+		if (HAL_GetTick() - last_draw >= MENU_DRAW_INTERVAL) {
+			DrawMenu();
+			last_draw = HAL_GetTick();
+			oldScreen = currentScreen; // we redrew
+		}
 
-		oldScreen = currentScreen;
 	}
 }

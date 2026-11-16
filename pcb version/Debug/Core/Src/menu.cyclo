@@ -1,5 +1,5 @@
-../Core/Src/menu.c:47:13:ReadButton	9
-../Core/Src/menu.c:103:13:DrawMenu	17
-../Core/Src/menu.c:317:13:NextMenuItem	5
-../Core/Src/menu.c:340:13:SelectItem	5
-../Core/Src/menu.c:359:6:RunMenu	6
+../Core/Src/menu.c:49:13:ReadButton	9
+../Core/Src/menu.c:105:13:DrawMenu	27
+../Core/Src/menu.c:343:13:HandleShortPress	15
+../Core/Src/menu.c:389:13:HandleLongPress	8
+../Core/Src/menu.c:416:6:RunMenu	7

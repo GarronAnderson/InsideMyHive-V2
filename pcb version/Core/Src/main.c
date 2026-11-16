@@ -148,6 +148,9 @@ int main(void) {
 		Error_Handler();
 	}
 
+	FRAM_SetNodeID(1);
+	FRAM_SetSleepTime(20);
+
 	if (NAU7802_Init() != 0) {
 		GFX_SetCursor(2, 2);
 		GFX_SetTextColor(ST7735_RED);
@@ -202,7 +205,7 @@ int main(void) {
 			// naptime!
 			in_menu = 0;
 			PowerOffDisplay();
-			HAL_Delay(50); // debounce delay
+			HAL_Delay(250); // debounce delay
 			EnterSleep();
 			PowerUp();
 		} else {

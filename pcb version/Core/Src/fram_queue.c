@@ -9,11 +9,12 @@
 #include "fram_queue.h"
 #include "hive_packet.h"
 
-#define NODE_ID_ADDR    6
-#define TAIL_ADDR       8
-#define HEAD_ADDR       10
-#define COUNT_ADDR      12
-#define PACKETS_START   14
+#define SLEEP_TIME_ADDR  4
+#define NODE_ID_ADDR     6
+#define TAIL_ADDR        8
+#define HEAD_ADDR        10
+#define COUNT_ADDR       12
+#define PACKETS_START    14
 
 #define PACKET_SIZE     sizeof(HivePacket)
 #define MAX_PACKETS     1440
@@ -153,10 +154,26 @@ uint16_t FRAM_GetCount(void) {
 	return count;
 }
 
+/* settings getters/setters */
+
 HAL_StatusTypeDef FRAM_SetNodeID(uint8_t node_id) {
 	return FRAM_Write(NODE_ID_ADDR, (uint8_t*) &node_id, sizeof(node_id));
 }
 
 HAL_StatusTypeDef FRAM_GetNodeID(uint8_t *node_id) {
-	return FRAM_Read(NODE_ID_ADDR, (uint8_t*) &node_id, sizeof(node_id));
+	if (node_id == NULL)
+		return HAL_ERROR;
+	return FRAM_Read(NODE_ID_ADDR, node_id, sizeof(*node_id));
+}
+
+HAL_StatusTypeDef FRAM_SetSleepTime(uint16_t sleep_time) {
+	return FRAM_Write(SLEEP_TIME_ADDR, (uint8_t*) &sleep_time,
+			sizeof(sleep_time));
+}
+
+HAL_StatusTypeDef FRAM_GetSleepTime(uint16_t *sleep_time) {
+	if (sleep_time == NULL)
+		return HAL_ERROR;
+	return FRAM_Read(SLEEP_TIME_ADDR, (uint8_t*) sleep_time,
+			sizeof(*sleep_time));
 }

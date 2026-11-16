@@ -8,6 +8,7 @@
 #include "main.h"
 #include "nau7802.h"
 #include "fram.h"
+#include "fram_queue.h"
 #include "st7735.h"
 #include "gfx.h"
 #include "rfm95.h"
@@ -69,6 +70,10 @@ static void SpiPinsToSleep(void) {
 
 void EnterSleep(void) {
 	/* Turn off anything that should not run during STOP2 */
+	// get sleep time from FRAM before we start powering down
+	uint16_t sleep_time;
+	FRAM_GetSleepTime(&sleep_time);
+
 	PowerOffDisplay();
 
 	NAU7802_PowerDown();

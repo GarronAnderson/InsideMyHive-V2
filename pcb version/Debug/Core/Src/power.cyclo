@@ -1,5 +1,5 @@
-../Core/Src/power.c:30:6:PowerOnDisplay	1
-../Core/Src/power.c:42:6:PowerOffDisplay	1
-../Core/Src/power.c:50:13:SpiPinsToSleep	1
-../Core/Src/power.c:70:6:EnterSleep	1
-../Core/Src/power.c:95:6:PowerUp	1
+../Core/Src/power.c:31:6:PowerOnDisplay	1
+../Core/Src/power.c:43:6:PowerOffDisplay	1
+../Core/Src/power.c:51:13:SpiPinsToSleep	1
+../Core/Src/power.c:71:6:EnterSleep	1
+../Core/Src/power.c:100:6:PowerUp	1

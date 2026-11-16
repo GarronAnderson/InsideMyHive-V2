@@ -19,4 +19,7 @@ uint16_t FRAM_GetCount(void);
 HAL_StatusTypeDef FRAM_SetNodeID(uint8_t node_id);
 HAL_StatusTypeDef FRAM_GetNodeID(uint8_t *node_id);
 
+HAL_StatusTypeDef FRAM_SetSleepTime(uint16_t sleep_time);
+HAL_StatusTypeDef FRAM_GetSleepTime(uint16_t *sleep_time);
+
 #endif /* INC_FRAM_QUEUE_H_ */
