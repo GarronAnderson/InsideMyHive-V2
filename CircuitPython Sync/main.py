@@ -30,8 +30,12 @@ from helpers import StatusLED
 
 # === USER INPUT ===
 
+GATEWAY_ID = 1 # your gateway id
+HEARTBEAT_INTERVAL = 60 # seconds
+
 LORA_FREQ = 915.0  # MHz
-PI_URL = "http://192.168.4.110:3001/readings"
+READINGS_URL = "http://192.168.4.110:3001/readings"
+HEARTBEAT_URL = "http://192.168.4.110:3001/gateway_heartbeat"
 
 # packet format
 rx_packet_format = "<BBHIBHIhHhHHHH"
@@ -48,6 +52,11 @@ FLAG_TEST_PACKET = 0x20
 PACKET_VERSION = 3
 
 # === END USER INPUT ===
+
+logger = logging.getLogger("inside unit")
+logger.setLevel(logging.DEBUG)
+
+logger.info(f"Gateway (id {GATEWAY_ID}) awake")
 
 # status leds
 # fmt: off
@@ -126,17 +135,17 @@ ssl_context = adafruit_connection_manager.get_radio_ssl_context(esp)
 requests = adafruit_requests.Session(pool, ssl_context)
 
 if esp.status == adafruit_esp32spi.WL_IDLE_STATUS:
-    print("ESP32 found and in idle mode")
+    logger.debug("ESP32 found and in idle mode")
 
-print("Connecting to AP...")
+logger.info("Connecting to WiFi...")
 while not esp.is_connected:
     try:
         esp.connect_AP(ssid, password)
     except OSError as e:
-        print("could not connect to AP, retrying: ", e)
+        logger.error("could not connect to WiFi, retrying: ", e)
         continue
-print("Connected to", esp.ap_info.ssid, "\tRSSI:", esp.ap_info.rssi)
-print("My IP address is", esp.ipv4_address)
+logger.info(f"Connected to {esp.ap_info.ssid}")
+logger.debug(f"RSSI: {esp.ap_info.rssi}, my IP address is {esp.ipv4_address}")
 
 ntp = adafruit_ntp.NTP(pool, tz_offset=0, cache_seconds=3600)
 
@@ -144,11 +153,11 @@ ntp_success = False
 for ntp_retries in range(5):
     try:
         rtc.RTC().datetime = ntp.datetime
-        print("set RTC to NTP")
+        logger.debug("set RTC to NTP")
         ntp_success = True
         break
     except Exception as e:
-        print(f"NTP sync failed with {e}, retrying (#{ntp_retries})")
+        logger.error(f"NTP sync failed with {e}, retrying (#{ntp_retries})")
 
 if not ntp_success:
     raise Exception("NTP sync failed")
@@ -164,9 +173,11 @@ wifi_led.on()
 
 # end WiFi setup
 
-print("mainloop start")
+logger.info("Mainloop start")
 
 data_to_upload = []
+
+last_heartbeat = 0
 
 while True:
     lora_led.on()
@@ -175,6 +186,7 @@ while True:
     if raw_packet is None:
         raw_packet = lora.receive(with_header=True)
     if (raw_packet is not None) and (len(data_to_upload) < 50):
+        logger.info(f"Got a packet ({len(data_to_upload)} in queue)")
         # we got a packet and have space for it
         try:
             packet = struct.unpack(rx_packet_format, raw_packet)
@@ -211,16 +223,16 @@ while True:
         test_packet       = bool(flags & FLAG_TEST_PACKET)
         # fmt: on
 
-        print(
+        logger.debug(
             f"timestamp {timestamp}\nweight {weight}\nflags: {flags}\nbacklog: {backlog} packets"
         )
-        print(f"crc: {crc}, calc crc: {calculated_crc}")
-        print(f"SNR: {lora.snr}, RSSI: {lora.rssi}")
+        logger.debug(f"crc: {crc}, calc crc: {calculated_crc}")
+        logger.debug(f"SNR: {lora.snr}, RSSI: {lora.rssi}")
 
         if calculated_crc == crc:
-            print("Good CRC, sending ACK")
+            logger.debug("Good CRC, sending ACK")
             if flags & FLAG_TIME_REQUEST:
-                print("sending time update")
+                logger.info("sending time update")
                 ack = struct.pack(
                     time_packet_format, sequence, calculated_crc, int(time.time())
                 )
@@ -263,19 +275,28 @@ while True:
                 "test_packet": test_packet,
             }
 
-            print("adding to queue")
+            logger.debug("adding to queue")
             data_to_upload.append(data)
         else:
-            print("CRC fail :(")
+            logger.error("CRC fail :(")
     else:
         if data_to_upload:
-            print("Posting to Pi")
+            logger.info("Posting to Pi")
             wifi_tx_led.on()
             try:
                 for data in data_to_upload:
-                    res = requests.post(PI_URL, json=data, headers=header)
-                    print(f"Posted, got <{res.text}>")
+                    res = requests.post(READINGS_URL, json=data, headers=header)
+                    logger.debug(f"Posted, got <{res.text}>")
                 wifi_tx_led.off()
                 data_to_upload = []
             except Exception as e:
-                print(f"Failed to POST with {e}")
+                logger.error(f"Failed to POST with {e}")
+                
+        if (time.time() - last_heartbeat) >= HEARTBEAT_INTERVAL:
+            last_heartbeat = time.time()
+            logger.debug("Sending heartbeat")
+            try:
+                res = requests.post(HEARTBEAT_URL, json={"gateway_id":GATEWAY_ID}, headers=header)
+                logger.debug(f"Posted heartbeat, got <{res.text}>")
+            except Exception as e:
+                logger.error(f"Failed to POST with {e}")
