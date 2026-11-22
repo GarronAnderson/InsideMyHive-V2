@@ -89,8 +89,7 @@ void EnterSleep(void) {
 	HAL_SuspendTick();
 
 	/* Set RTC wake-up timer */
-	HAL_RTCEx_SetWakeUpTimer_IT(&hrtc,
-	SLEEP_TIME,
+	HAL_RTCEx_SetWakeUpTimer_IT(&hrtc, sleep_time,
 	RTC_WAKEUPCLOCK_CK_SPRE_16BITS, 0);
 
 	/* Enter STOP2 */

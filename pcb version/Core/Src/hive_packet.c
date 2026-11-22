@@ -11,12 +11,14 @@
 #include <time.h>
 #include "rtc.h"
 #include <string.h>
+#include "fram_queue.h"
 
 #define MAX_RETRIES 3
 
-#define ACK_HDR_LEN         4
-#define ACK_LEN             (ACK_HDR_LEN + sizeof(HiveAck))        // 8
-#define ACK_LEN_WITH_TIME   (ACK_LEN + sizeof(uint32_t))           // 12
+#define ACK_HDR_LEN           4
+#define ACK_LEN               (ACK_HDR_LEN + sizeof(HiveAck))        // 9
+#define ACK_LEN_WITH_TIME     (ACK_LEN + sizeof(uint32_t))           // 13
+#define ACK_LEN_WITH_INTERVAL (ACK_LEN + sizeof(uint16_t))           // 11
 
 uint8_t TransmitPacket(HivePacket *packet) {
 	for (uint8_t retries = 0; retries < MAX_RETRIES; retries++) {
@@ -30,7 +32,8 @@ uint8_t TransmitPacket(HivePacket *packet) {
 				!= HAL_OK)
 			continue;
 
-		if (ack_length != ACK_LEN && ack_length != ACK_LEN_WITH_TIME)
+		if (ack_length != ACK_LEN && ack_length != ACK_LEN_WITH_TIME
+				&& ack_length != ACK_LEN_WITH_INTERVAL)
 			continue;
 
 		HiveAck ack;
@@ -39,12 +42,22 @@ uint8_t TransmitPacket(HivePacket *packet) {
 			continue;
 
 		if ((packet->flags & FLAG_TIME_REQUEST)
-				&& ack_length == ACK_LEN_WITH_TIME) {
+				&& ack_length == ACK_LEN_WITH_TIME
+				&& (ack.flags & REPLY_FLAG_TIME_PACKET)) {
 			uint32_t t;
 			memcpy(&t, &ack_buffer[ACK_LEN], sizeof(t));
 			if (t >= RTC_VALID_MIN_UNIX)
 				RTC_SetFromUnix(t);
 		}
+
+		if (ack_length == ACK_LEN_WITH_INTERVAL
+				&& (ack.flags & REPLY_FLAG_INTERVAL)) {
+			uint16_t interval;
+			memcpy(&interval, &ack_buffer[ACK_LEN], sizeof(interval));
+			if (interval >= 5)
+				FRAM_SetSleepTime(interval);
+		}
+
 		return 1;
 	}
 	return 0;

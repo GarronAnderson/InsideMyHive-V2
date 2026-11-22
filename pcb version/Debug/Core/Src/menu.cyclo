@@ -1,5 +1,6 @@
-../Core/Src/menu.c:49:13:ReadButton	9
-../Core/Src/menu.c:105:13:DrawMenu	27
-../Core/Src/menu.c:343:13:HandleShortPress	15
-../Core/Src/menu.c:389:13:HandleLongPress	8
-../Core/Src/menu.c:416:6:RunMenu	7
+../Core/Src/menu.c:50:13:ReadButton	9
+../Core/Src/menu.c:106:13:uint32_to_bin	5
+../Core/Src/menu.c:119:13:DrawMenu	25
+../Core/Src/menu.c:358:13:HandleShortPress	15
+../Core/Src/menu.c:404:13:HandleLongPress	8
+../Core/Src/menu.c:431:6:RunMenu	9

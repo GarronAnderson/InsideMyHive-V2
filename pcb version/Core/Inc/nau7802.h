@@ -15,6 +15,8 @@ uint8_t NAU7802_Reset(void);
 uint8_t NAU7802_PowerUp(void);
 uint8_t NAU7802_PowerDown(void);
 
+HAL_StatusTypeDef NAU7802_DataReady(uint8_t ready);
 HAL_StatusTypeDef NAU7802_ReadADC(int32_t *value);
+HAL_StatusTypeDef NAU7802_ReadADCBlocking(int32_t *value);
 
 #endif /* INC_NAU7802_H_ */

@@ -85,6 +85,8 @@ static uint32_t cycle_count = 0;
 
 uint8_t node_id = 0;
 
+uint8_t nau7802_error = 0;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -148,8 +150,8 @@ int main(void) {
 		Error_Handler();
 	}
 
-	FRAM_SetNodeID(1);
-	FRAM_SetSleepTime(20);
+	//FRAM_SetNodeID(1);
+	//FRAM_SetSleepTime(20);
 
 	if (NAU7802_Init() != 0) {
 		GFX_SetCursor(2, 2);
@@ -212,9 +214,11 @@ int main(void) {
 
 			// Powered On
 
-			NAU7802_ReadADC(&weight);
+			nau7802_error = 0;
+			if (NAU7802_ReadADCBlocking(&weight) != HAL_OK)
+				nau7802_error = 1;
 
-			packet.version = 3;
+			packet.version = 4;
 
 			FRAM_GetNodeID(&node_id);
 			packet.node_id = node_id;
@@ -230,6 +234,9 @@ int main(void) {
 			// currently, these sensors aren't installed
 			packet.flags |= (FLAG_INT_HDC3022_ERROR | FLAG_EXT_HDC3022_ERROR
 					| FLAG_BMP585_ERROR);
+
+			if (nau7802_error == 1)
+				packet.flags |= FLAG_NAU7802_ERROR;
 
 			packet.timestamp = (uint32_t) GetTimestamp();
 

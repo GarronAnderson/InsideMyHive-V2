@@ -20,9 +20,10 @@
 #include "power.h"
 #include "hive_packet.h"
 
-#define MENU_DRAW_INTERVAL  100 //ms
+#define MENU_DRAW_INTERVAL  100 // ms
+#define MENU_TIMEOUT        20000 // ms
 #define BUTTON_DEBOUNCE_MS  30
-#define BUTTON_LONG_MS      500
+#define BUTTON_LONG_MS      350
 #define LIVE_TX_PERIOD      2000
 
 #define COLOR_NORMAL_BG   ST7735_CHARCOAL
@@ -102,13 +103,23 @@ ButtonEvent ReadButton(void) {
 	return BUTTON_NONE;
 }
 
+static void uint32_to_bin(uint32_t val, char *buf, size_t buf_size) {
+	if (buf_size < 33) {
+		if (buf_size > 0)
+			buf[0] = '\0';
+		return;
+	}
+
+	for (int i = 31; i >= 0; i--) {
+		buf[31 - i] = ((val >> i) & 1U) ? '1' : '0';
+	}
+	buf[32] = '\0';
+}
+
 static void DrawMenu(void) {
 	if (currentScreen != oldScreen) {
 		ST7735_Fill(ST7735_CHARCOAL);
 		switch (currentScreen) {
-		case SCREEN_HOME:
-			currentHighlighted = 0;
-			break;
 		case SCREEN_STATUS:
 			currentSelected = 1;
 			break;
@@ -153,8 +164,8 @@ static void DrawMenu(void) {
 		uint8_t rtc_valid = RTC_IsValid();
 
 		uint16_t backlog = FRAM_GetCount();
-		snprintf(backlog_buffer, sizeof(backlog_buffer), "Backlog: %d packets",
-				backlog);
+		snprintf(backlog_buffer, sizeof(backlog_buffer),
+				"Backlog: %d packets     ", backlog);
 
 		GFX_SetTextColor(ST7735_OFFWHT);
 		GFX_SetTextBackground(ST7735_CHARCOAL);
@@ -195,8 +206,10 @@ static void DrawMenu(void) {
 	case SCREEN_SENSORS:
 		int32_t weight;
 		char weight_buffer[17];
+		char bin_str[33];
 
 		NAU7802_ReadADC(&weight);
+		uint32_to_bin(weight, bin_str, sizeof(bin_str));
 		snprintf(weight_buffer, sizeof(weight_buffer), "%ld              ",
 				(long) weight);
 
@@ -205,15 +218,17 @@ static void DrawMenu(void) {
 		GFX_SetCursor(5, 5);
 		GFX_Print("ADC: ");
 		GFX_Print(weight_buffer);
+		GFX_SetCursor(5, 17);
+		GFX_Print(bin_str);
 
 		GFX_SetTextColor(ST7735_RED);
-		GFX_SetCursor(5, 17);
+		GFX_SetCursor(5, 29);
 		GFX_Print("int. HDC3022: unavailable");
 
-		GFX_SetCursor(5, 29);
+		GFX_SetCursor(5, 41);
 		GFX_Print("ext. HDC3022: unavailable");
 
-		GFX_SetCursor(5, 41);
+		GFX_SetCursor(5, 53);
 		GFX_Print("BMP585: unavailable");
 
 		GFX_SetTextColor(ST7735_MAGENTA);
@@ -234,7 +249,7 @@ static void DrawMenu(void) {
 
 		if (HAL_GetTick() - last_screen_update >= LIVE_TX_PERIOD) {
 			last_screen_update = HAL_GetTick();
-			packet.version = 3;
+			packet.version = 4;
 			packet.node_id = 0;
 			packet.sequence++;
 
@@ -423,6 +438,7 @@ void RunMenu(void) {
 
 	exit_menu = false;
 	uint32_t last_draw = HAL_GetTick();
+	uint32_t last_action = HAL_GetTick();
 
 	while (!exit_menu) {
 
@@ -431,15 +447,26 @@ void RunMenu(void) {
 		switch (menu_action) {
 
 		case BUTTON_LONG:
+			last_action = HAL_GetTick();
 			HandleLongPress();
 			break;
 
 		case BUTTON_SHORT:
+			last_action = HAL_GetTick();
 			HandleShortPress();
 			break;
 
 		case BUTTON_NONE:
 			break;
+		}
+
+		if (HAL_GetTick() - last_action >= MENU_TIMEOUT) {
+			switch (currentScreen) {
+			case SCREEN_TX:
+				break;
+			default:
+				exit_menu = 1;
+			}
 		}
 
 		if (HAL_GetTick() - last_draw >= MENU_DRAW_INTERVAL) {
