@@ -5,7 +5,6 @@ Send ntfy.sh alerts for hive or gateway down.
 import datetime
 import requests
 import shelve
-import pprint
 import psycopg2
 
 # === USER INPUT ===
@@ -13,7 +12,7 @@ import psycopg2
 NTFY_URL = "https://ntfy.sh/ganderson_hivestatus"
 
 NOTIFICATION_REPEAT_COUNT = 3
-NOTIFICATION_REPEAT_INTERVAL = -1 # mins
+NOTIFICATION_REPEAT_INTERVAL = 60 # mins
 
 NOTIFICATION_DOWNTIME_START = "21:00" # local time
 NOTIFICATION_DOWNTIME_END = "08:00" 
@@ -33,7 +32,6 @@ def is_downtime(now):
     return t >= start or t < end
 
 def should_notify(alerts, key, now):
-    pprint.pprint(alerts)
     if is_downtime(now):
         return False
 
@@ -71,6 +69,13 @@ gateway_rows = cur.fetchall()
 
 cur.execute("SELECT * from api.node_status")
 node_rows = cur.fetchall()
+
+cur.execute("SELECT * from api.nodes")
+nodes = cur.fetchall()
+nodes_keys = ["node_id", "hive_name", "notes", "location", "location_desc", "expected_interval", "gateway_id"]
+
+nodes = [dict(zip(nodes_keys, values)) for values in nodes]
+
 conn.close()
 
 now = datetime.datetime.now()
@@ -96,6 +101,12 @@ with shelve.open("notifications", writeback=True) as shelf:
     for (node_name, node_id, last_heard, secs_down, stale) in node_rows:
         if not stale or node_id in IGNORE_NODES:
             continue
+        
+        my_gateway = [node for node in nodes if node['node_id'] == node_id][0]['gateway_id'] 
+        my_gateway_key = f'gateway:{gateway_id}'
+
+        if my_gateway_key in active:
+            continue # skip nodes whose gateway is down
 
         key = f'node:{node_id}'
         active.add(key)
@@ -107,6 +118,26 @@ with shelve.open("notifications", writeback=True) as shelf:
                     now, 
                     False)
     
+    for k, v in alerts.items():
+        if k not in active:
+            # we're back online
+            type, _, id = k.partition(":")
+            if type == "gateway":
+                title = f'Gateway online'
+                message = f"Gateway #{id} back online"
+            elif type == "node":
+                title = f'Node online'
+                message = f"Node #{id} back online"
+            else:
+                continue
+
+            headers = {"Title": title}
+            requests.post(
+                    NTFY_URL,
+                    data=message.encode('utf-8'),
+                    headers=headers,
+                    )
+                
 
     # clear old ones and save the shelf
     alerts = {k: v for k,v in alerts.items() if k in active}
