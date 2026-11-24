@@ -1,0 +1,64 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>InsideMyHive</title>
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/6/w3.css" />
+    <script
+      src="https://kit.fontawesome.com/a6a9fd6c01.js"
+      crossorigin="anonymous"
+    ></script>
+  </head>
+
+  <body>
+    <main>
+      <div id="main-status-bar" class="w3-bar w3-yellow">
+	      <a class="w3-bar-item">InsideMyHive Status</a>
+	      <a href="#" class="w3-bar-item w3-responsive">Grafana</a>
+      </div>
+
+      <div class="w3-container w3-green">
+        <h2>All devices online</h2>
+      </div>
+
+      <div class="w3-responsive w3-container w3-pale-blue w3-padding-16">
+	<h3>Nodes</h3>
+        <table id="nodes-table" class="w3-table w3-border">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Node Name</th>
+              <th>Gateway Name</th>
+              <th>Reading Age</th>
+              <th>Node Status</th>
+              <th>Sleep Time</th>
+              <th></th>
+	      <th>Command</th>
+	      <th>Queued</th>
+	      <th>Sent</th>
+            </tr>
+          </thead>
+          <tbody id="nodes-body"></tbody>
+        </table>
+      </div>
+
+      <div class="w3-responsive w3-container w3-pale-blue w3-padding-16">
+	<h3>Gateways</h3>
+        <table id="gateways-table" class="w3-table w3-border">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Gateway Name</th>
+              <th>Heartbeat Age</th>
+              <th>Gateway Status</th>
+            </tr>
+          </thead>
+          <tbody id="gateways-body"></tbody>
+        </table>
+      </div>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
