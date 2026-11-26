@@ -110,18 +110,18 @@ static uint8_t NAU7802_WaitPowerReady(uint32_t timeout_ms) {
 
 /* main doodles */
 
-static uint8_t NAU7802_CalibrateInternal(void) {
+uint8_t NAU7802_CalibrateInternal(void) {
 	// set cal type
 	if (NAU7802_UpdateReg(NAU7802_CTRL2, 0x3, NAU7802_CAL_INTERN) != HAL_OK)
 		return 1;
 
-	if (NAU7802_UpdateReg(NAU7802_CTRL2, (1 << 3), (1 << 3)) != HAL_OK)
+	if (NAU7802_UpdateReg(NAU7802_CTRL2, (1u << 2), (1u << 2)) != HAL_OK)
 		return 1;
 
 	// wait for it
 	uint32_t start = HAL_GetTick();
 	while (!NAU7802_IsCalibrationDone()) {
-		if ((HAL_GetTick() - start) >= 5000) // has one second to calibrate
+		if ((HAL_GetTick() - start) >= 1000) // has one second to calibrate
 			return 1;   // timed out (or I2C is failing)
 		HAL_Delay(1);
 	}
@@ -218,7 +218,7 @@ static uint8_t NAU7802_IsCalibrationDone(void) {
 	if (NAU7802_ReadReg(NAU7802_CTRL2, &reg) != HAL_OK)
 		return 0;
 
-	return !((reg >> 3) & 1);
+	return !((reg >> 2) & 1);
 }
 
 uint8_t NAU7802_PowerUp(void) {

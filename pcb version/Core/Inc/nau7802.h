@@ -9,6 +9,7 @@
 #define INC_NAU7802_H_
 
 uint8_t NAU7802_Init(void);
+uint8_t NAU7802_CalibrateInternal(void);
 
 uint8_t NAU7802_Reset(void);
 

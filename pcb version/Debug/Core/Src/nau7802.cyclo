@@ -2,7 +2,7 @@
 ../Core/Src/nau7802.c:81:19:NAU7802_WriteReg	1
 ../Core/Src/nau7802.c:88:19:NAU7802_UpdateReg	2
 ../Core/Src/nau7802.c:100:16:NAU7802_WaitPowerReady	3
-../Core/Src/nau7802.c:113:16:NAU7802_CalibrateInternal	6
+../Core/Src/nau7802.c:113:9:NAU7802_CalibrateInternal	6
 ../Core/Src/nau7802.c:138:9:NAU7802_Init	11
 ../Core/Src/nau7802.c:184:9:NAU7802_Reset	4
 ../Core/Src/nau7802.c:206:16:NAU7802_IsPowerReady	2

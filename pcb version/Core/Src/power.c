@@ -112,6 +112,7 @@ void PowerUp(void) {
 	FRAM_Wake();
 
 	NAU7802_PowerUp();
+	NAU7802_CalibrateInternal();
 
 	lora_standby();
 }

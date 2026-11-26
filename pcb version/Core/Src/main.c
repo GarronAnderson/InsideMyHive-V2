@@ -217,6 +217,12 @@ int main(void) {
 			nau7802_error = 0;
 			if (NAU7802_ReadADCBlocking(&weight) != HAL_OK)
 				nau7802_error = 1;
+			// throw those away
+			// give it 5 sample conversion times (see datasheet)
+			HAL_Delay(500);
+
+			if (NAU7802_ReadADCBlocking(&weight) != HAL_OK)
+				nau7802_error = 1;
 
 			packet.version = 4;
 
