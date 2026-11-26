@@ -39,6 +39,9 @@
 
 #include "nau7802.h"
 
+#include "driver_htu21d.h"
+#include "driver_htu21d_interface.h"
+
 #include "menu.h"
 
 /* USER CODE END Includes */
@@ -86,6 +89,9 @@ static uint32_t cycle_count = 0;
 uint8_t node_id = 0;
 
 uint8_t nau7802_error = 0;
+uint8_t htu21d_error = 0;
+
+htu21d_handle_t htu21d;
 
 /* USER CODE END PV */
 
@@ -160,6 +166,33 @@ int main(void) {
 		Error_Handler();
 	}
 
+	uint8_t res;
+	uint16_t temperature_raw;
+	uint16_t humidity_raw;
+	float temperature;
+	float humidity;
+
+	DRIVER_HTU21D_LINK_INIT(&htu21d, htu21d_handle_t);
+	DRIVER_HTU21D_LINK_IIC_INIT(&htu21d, htu21d_interface_iic_init);
+	DRIVER_HTU21D_LINK_IIC_DEINIT(&htu21d, htu21d_interface_iic_deinit);
+	DRIVER_HTU21D_LINK_IIC_WRITE_CMD(&htu21d, htu21d_interface_iic_write_cmd);
+	DRIVER_HTU21D_LINK_IIC_READ_CMD(&htu21d, htu21d_interface_iic_read_cmd);
+	DRIVER_HTU21D_LINK_IIC_WRITE(&htu21d, htu21d_interface_iic_write);
+	DRIVER_HTU21D_LINK_IIC_READ(&htu21d, htu21d_interface_iic_read);
+	DRIVER_HTU21D_LINK_IIC_READ_WITH_SCL(&htu21d,
+			htu21d_interface_iic_read_with_scl);
+	DRIVER_HTU21D_LINK_DELAY_MS(&htu21d, htu21d_interface_delay_ms);
+	DRIVER_HTU21D_LINK_DEBUG_PRINT(&htu21d, htu21d_interface_debug_print);
+
+	res = htu21d_init(&htu21d);
+
+	if (res != 0) {
+		GFX_SetCursor(2, 2);
+		GFX_SetTextColor(ST7735_RED);
+		GFX_Print("HTU21D init failed");
+		Error_Handler();
+	}
+
 	SX1276_HandleTypedef rfm95 = { .hspi = &hspi1, .nss_port = RFM_CS_GPIO_Port,
 			.nss_pin = RFM_CS_Pin, .rst_port = RFM_RST_GPIO_Port, .rst_pin =
 			RFM_RST_Pin };
@@ -215,14 +248,21 @@ int main(void) {
 			// Powered On
 
 			nau7802_error = 0;
-			if (NAU7802_ReadADCBlocking(&weight) != HAL_OK)
+			if (NAU7802_ReadADCBlocking(&weight) != HAL_OK) {
+				weight = 0;
 				nau7802_error = 1;
+			}
 			// throw those away
 			// give it 5 sample conversion times (see datasheet)
 			HAL_Delay(500);
 
-			if (NAU7802_ReadADCBlocking(&weight) != HAL_OK)
+			if (NAU7802_ReadADCBlocking(&weight) != HAL_OK) {
+				weight = 0;
 				nau7802_error = 1;
+			}
+
+			htu21d_error = htu21d_read_temperature_humidity(&htu21d,
+					&temperature_raw, &temperature, &humidity_raw, &humidity);
 
 			packet.version = 4;
 
@@ -238,17 +278,19 @@ int main(void) {
 			cycle_count++;
 
 			// currently, these sensors aren't installed
-			packet.flags |= (FLAG_INT_HDC3022_ERROR | FLAG_EXT_HDC3022_ERROR
-					| FLAG_BMP585_ERROR);
+			packet.flags |= (FLAG_EXT_HDC3022_ERROR | FLAG_BMP585_ERROR);
 
 			if (nau7802_error == 1)
 				packet.flags |= FLAG_NAU7802_ERROR;
 
+			if (htu21d_error != 1)
+				packet.flags |= FLAG_INT_HDC3022_ERROR;
+
 			packet.timestamp = (uint32_t) GetTimestamp();
 
 			packet.weight = weight;
-			packet.temperature = 0;
-			packet.humidity = 0;
+			packet.temperature = temperature * 100;
+			packet.humidity = humidity * 100;
 
 			packet.external_temperature = 0;
 			packet.external_humidity = 0;
